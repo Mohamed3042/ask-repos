@@ -1,0 +1,52 @@
+name: ask-repos
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: askrepos
+      POSTGRES_PASSWORD: askrepos
+      POSTGRES_DB: askrepos
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U askrepos -d askrepos"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+    image: ghcr.io/mohamed3042/ask-repos:local
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://askrepos:askrepos@db:5432/askrepos
+      ASK_REPOS_OWNER: ${ASK_REPOS_OWNER:-Mohamed3042}
+      ASK_REPOS_MODEL_CACHE: /models
+      ASK_REPOS_BOOTSTRAP_INDEX: ${ASK_REPOS_BOOTSTRAP_INDEX:-1}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      ASK_REPOS_API_KEY: ${ASK_REPOS_API_KEY:-}
+      ASK_REPOS_WEBHOOK_SECRET: ${ASK_REPOS_WEBHOOK_SECRET:-}
+      ASK_REPOS_CORS_ORIGINS: ${ASK_REPOS_CORS_ORIGINS:-}
+      ASK_REPOS_OTEL_EXPORTER: ${ASK_REPOS_OTEL_EXPORTER:-none}
+    ports:
+      - "8080:8080"
+    volumes:
+      - models:/models
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8080/health').read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 120s
+
+volumes:
+  pgdata:
+  models:

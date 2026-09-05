@@ -1,0 +1,74 @@
+[build-system]
+requires = ["hatchling==1.28.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ask-repos"
+version = "0.1.0"
+description = "Ask any GitHub account about its repositories — every answer cites file and line, or refuses"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "MIT" }
+authors = [{ name = "Mohamed Mahmoud", email = "medo433447@gmail.com" }]
+keywords = ["rag", "pgvector", "langgraph", "mcp", "citations", "github"]
+classifiers = [
+  "Programming Language :: Python :: 3.12",
+  "License :: OSI Approved :: MIT License",
+  "Intended Audience :: Developers",
+]
+dependencies = [
+  "fastapi==0.141.1",
+  "uvicorn[standard]==0.52.4",
+  "sqlalchemy==2.0.52",
+  "alembic==1.19.2",
+  "psycopg[binary]==3.3.5",
+  "pgvector==0.5.0",
+  "httpx==0.28.1",
+  "pydantic==2.13.5",
+  "pydantic-settings==2.15.0",
+  "fastembed==0.8.0",
+  "langgraph==1.2.11",
+  "mcp==2.1.1",
+  "typer==0.27.2",
+  "PyYAML==6.0.3",
+  "prometheus-client==0.26.0",
+  "opentelemetry-api==1.44.0",
+  "opentelemetry-sdk==1.44.0",
+  "opentelemetry-instrumentation-fastapi==0.65b0",
+  "opentelemetry-exporter-otlp-proto-http==1.44.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==9.1.1",
+  "pytest-asyncio==1.4.0",
+  "ruff==0.16.6",
+  "respx==0.23.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/Mohamed3042/ask-repos"
+Issues = "https://github.com/Mohamed3042/ask-repos/issues"
+
+[project.scripts]
+ask-repos = "ask_repos.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ask_repos"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4", "RUF"]
+# B008: FastAPI/Typer defaults are calls by design. RUF001-3: the prose uses real
+# typography (—, ·). SIM905: a wrapped word list reads better than 90 quoted strings.
+ignore = ["B008", "RUF001", "RUF002", "RUF003", "SIM905"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+filterwarnings = ["ignore::DeprecationWarning"]
+markers = ["db: needs a PostgreSQL+pgvector database", "slow: downloads or runs local models"]

@@ -1,0 +1,11 @@
+.venv/
+.git/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.fastembed_cache/
+evals/reports/
+docs/proof/
+changelog/
+.env
