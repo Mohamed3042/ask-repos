@@ -34,8 +34,6 @@ jobs:
         # Sabotages `blobUrl` on a copy and requires the suite to go red, then requires the
         # restored source to go green. A check that cannot fail is decoration.
         run: npm run prove:gates
-      - name: The committed eval report matches the measured one
-        run: npm run check:evals
       - name: Build
         run: npm run build
 

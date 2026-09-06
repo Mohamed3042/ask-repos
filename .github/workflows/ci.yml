@@ -95,6 +95,13 @@ jobs:
         # Citation validity is an absolute: a single unresolvable citation fails the build.
         # The recall floor is the measured baseline for this subset (docs/retrieval.md).
         run: ask-repos evals run --min-citation-validity 1.0 --min-recall5 0.90
+      - name: The report the UI renders is the report this job just measured
+        # `web/data/eval-report.json` is committed because the /evals page renders it and
+        # the reports themselves are build artefacts (gitignored). This is the step that
+        # stops it going stale: it compares the gated numbers - not timestamps, not probe
+        # text - against the run above, and fails with both sides printed.
+        run: node web/scripts/sync-evals.mjs --check --source evals/reports/report.json
+
       - name: Upload the eval report
         if: always()
         uses: actions/upload-artifact@v4

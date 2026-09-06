@@ -55,7 +55,19 @@ function firstExisting(paths) {
   return null;
 }
 
-const source = firstExisting(SOURCES);
+// `--source <path>` names the report explicitly. It matters: `evals/reports/` is whatever
+// the last local run produced (often the FULL corpus, 6,018 chunks) while `evals/reports-ci/`
+// is the 14-repository subset the gate measures. A search order that resolves differently
+// on a laptop and on a runner is a check that means two different things.
+const explicit = (() => {
+  const index = process.argv.indexOf("--source");
+  return index === -1 ? null : process.argv[index + 1];
+})();
+const source = explicit ? resolve(explicit) : firstExisting(SOURCES);
+if (explicit && !existsSync(source)) {
+  console.error(`no eval report at ${source}`);
+  process.exit(1);
+}
 if (!source) {
   console.error(
     `no eval report found. Looked in:\n  ${SOURCES.join("\n  ")}\n` +
