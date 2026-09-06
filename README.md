@@ -306,9 +306,14 @@ gh api -X POST repos/<owner>/<repo>/hooks -f name=web -F active=true   -f 'event
 ```
 
 The route verifies `X-Hub-Signature-256`, ignores replayed delivery ids and private
-repositories, and queues the re-index in the background. It is **not** installed on this
-account's repositories: that needs a publicly reachable URL, and this lane ships no hosted
-deployment. The signature, replay and private-push paths are covered in `tests/test_api.py`.
+repositories, and queues the re-index in the background. The signature, replay and
+private-push paths are covered in `tests/test_api.py`, and `/corpus` reports the webhook's
+health — *not configured* is shown as its own state, distinct from zero deliveries.
+
+It is **not** installed on this account's repositories. There is a public URL now, but the
+hosted deployment is read-only: its corpus is baked into the image and it answers the
+webhook with 403 ([ADR 0008](docs/adr/0008-space-readonly-corpus.md)). Run your own
+instance to keep a corpus fresh from pushes.
 
 Point it at any account: `ask-repos index --owner <login>`. Private repositories are refused
 twice — once when listing, once in the pipeline — even with a token that could see them.
