@@ -196,11 +196,11 @@ function Gate({
         {value}
       </div>
       <div className="label">{label}</div>
-      {detail ? (
-        <div className="label mono" style={{ opacity: 0.8 }}>
-          {detail}
-        </div>
-      ) : null}
+      {/* No `opacity` here. `--muted` is 5.5:1 on `--surface`, and dimming it to 80 %
+          took the effective colour to #75807c — 4.08:1, below AA. Measured by
+          `e2e/a11y.spec.ts`, which went red on exactly these two nodes. The detail line
+          is distinguished by the monospace face instead. */}
+      {detail ? <div className="label mono">{detail}</div> : null}
     </div>
   );
 }

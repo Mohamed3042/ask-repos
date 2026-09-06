@@ -20,7 +20,7 @@ The API has to be running: `docker compose up -d db api` from the repository roo
 | `npm run dev` / `build` / `start` | the usual |
 | `npm run lint` · `typecheck` | ESLint, `tsc --noEmit` |
 | `npm test` | vitest — the citation parser and the trace context |
-| `npm run e2e` | Playwright against a **real** API; `E2E_BASE_URL` points it at a deployed one |
+| `npm run e2e` | Playwright against a **real** API; `E2E_BASE_URL` points it at a deployed one. Includes `a11y.spec.ts`, which runs axe-core over every page in both themes, in Arabic, and over the answered and refused states |
 | `npm run prove:gates` | sabotages `blobUrl` on a copy and requires the suite to go red, then green |
 | `npm run prove:gates:e2e` | the same for the browser assertion |
 | `npm run sync:evals` / `check:evals` | copy the eval report CI gates on into `data/`, or verify the committed copy still matches |

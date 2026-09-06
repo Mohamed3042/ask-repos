@@ -39,11 +39,21 @@ is correct in the first byte of HTML.
 * **No dependency to keep up with.** The runtime dependency list is React, Next,
   `server-only`, and OpenTelemetry. `npm audit` reports 0 vulnerabilities at the pinned
   versions; every version is pinned exactly, no `^`.
-* **Contrast is a property of four tokens, not of every component.** Measured against
-  WCAG AA (4.5:1) in both themes: light `--muted` #52605b on `--bg` #f5f7f6 → 5.5:1;
-  light `--accent` #0b6b53 on `--surface` #ffffff → 6.4:1 (and white on `--accent` is the
-  same ratio, which is what the primary button needs); dark `--muted` #9aa8a2 on `--bg`
-  #0c1211 → 7.6:1; dark `--accent` #4fd1a5 on `--bg` → 9.8:1.
+* **Contrast is a property of four tokens — until a component multiplies one.** The
+  tokens were chosen against WCAG AA (4.5:1) and measured in both themes: light `--muted`
+  #52605b on `--bg` #f5f7f6 → 5.5:1; light `--accent` #0b6b53 on `--surface` #ffffff →
+  6.4:1 (and white on `--accent` is the same ratio, which is what the primary button
+  needs); dark `--muted` #9aa8a2 on `--bg` #0c1211 → 7.6:1; dark `--accent` #4fd1a5 on
+  `--bg` → 9.8:1.
+
+  And then one component put `opacity: 0.8` on a `.label`, taking a compliant #52605b to
+  an effective **#75807c at 4.08:1** — below AA. Lighthouse found it on the deployed site
+  and nothing in the repository could have, so `web/e2e/a11y.spec.ts` now runs axe-core
+  over all three pages in both themes and in Arabic, and over the answered and refused
+  states. It went red on exactly those two nodes before the fix.
+* **Measured on the live site** with Lighthouse 12 (Chrome, headless), after that fix —
+  `/`, `/corpus` and `/evals` each score **accessibility 100, best practices 100, SEO 100,
+  performance 100**.
 * **The cost of writing it by hand** is that there is no component library to reach for
   when the next screen is more complex than a table and a form. If that day comes, this
   ADR is the one to supersede.

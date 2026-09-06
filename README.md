@@ -226,8 +226,11 @@ three pages:
 | `/evals` | The committed eval report: the gated numbers, retrieval per arm, and every injection probe with what the service actually said. |
 
 English and Arabic with real right-to-left (server-rendered from a cookie, so the first
-painted frame is correct), light and dark, keyboard-operable, contrast ≥ 4.5:1 in both
-themes ([ADR 0006](docs/adr/0006-nextjs-app-router.md)).
+painted frame is correct), light and dark, keyboard-operable. Lighthouse 12 on the live
+site scores **100 for accessibility, best practices, SEO and performance** on all three
+pages, and `web/e2e/a11y.spec.ts` runs axe-core over every page in both themes, in Arabic,
+and over the answered and refused states — it caught a real 4.08:1 contrast regression that
+reading the stylesheet did not ([ADR 0006](docs/adr/0006-nextjs-app-router.md)).
 
 <p align="center">
   <img src="docs/proof/shots/local-corpus-arabic.png" width="47%" alt="the corpus page in Arabic, right to left" />
