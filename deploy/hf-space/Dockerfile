@@ -78,7 +78,7 @@ RUN set -eux; \
     ask-repos corpus; \
     pg_ctl -D "${PGDATA}" -m fast -w stop
 
-COPY --chown=1000:1000 deploy/hf-space/entrypoint.sh /usr/local/bin/space-entrypoint.sh
+COPY --chown=1000:1000 --chmod=755 deploy/hf-space/entrypoint.sh /usr/local/bin/space-entrypoint.sh
 
 # The demo's guard rails. Every one of them is a runtime refusal with a reason, not a
 # route that quietly disappeared.
