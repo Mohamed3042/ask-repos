@@ -27,25 +27,29 @@ alternative trustworthy.
 git clone https://github.com/Mohamed3042/ask-repos.git && cd ask-repos && ./scripts/verify.sh
 ```
 
-Requires Docker and Python 3.12. The script starts PostgreSQL with pgvector, installs the
-package, indexes one repository from the frozen corpus in `evals/corpus/` (**offline — no
-GitHub call, no API key**), and asks a question. What you will see, verbatim from a clean
-clone:
+Needs Docker and Python 3.12. The script starts PostgreSQL with pgvector, installs the
+package into a throwaway virtualenv, indexes one repository from the frozen corpus in
+`evals/corpus/` (**offline — no GitHub call, no API key**) and asks a question. Measured from
+a clean clone: 70.0 s to index 25 files into 200 chunks, then the answer.
+
+With a `GEMINI_API_KEY` set, verbatim:
 
 ```
 ==> asking: Which Kuwait branches does the Retail Ops Hub demo cover?
 
-# Retail Ops Hub — Pet Point-style Kuwait demo > **Independent technical demo for a job
-application. …
+The Retail Ops Hub demo covers four Kuwait branches. These branches are Salmiya / السالمية,
+Al Rai / الري, Jabriya / الجابرية, and Fintas / الفنطاس.
 
-  ↳ Mohamed3042/petpoint-ops-hub/README.md#L1-L8@5a44442
-    https://github.com/Mohamed3042/petpoint-ops-hub/blob/5a444423c1ac1254f2ccff0abe48ca504ab94e2e/README.md#L1-L8
-provider: extractive
+  ↳ Mohamed3042/petpoint-ops-hub/README.md#L9-L37@5a44442
+    https://github.com/Mohamed3042/petpoint-ops-hub/blob/5a444423c1ac1254f2ccff0abe48ca504ab94e2e/README.md#L9-L37
+provider: gemini gemini-3.5-flash
 ```
 
-Open that URL. The lines are there. That is the whole claim.
+With **no key at all**, the same evidence comes back as verbatim quotations instead of prose,
+carrying four citations, and ending `provider: extractive`. Either way, open the URL: the
+lines are there. That is the whole claim.
 
-Then try one it cannot answer:
+Then ask one it cannot answer:
 
 ```bash
 ask-repos ask "Which certifications does the author hold?"
@@ -102,14 +106,18 @@ corpus cannot answer.
 |---|---|
 | citation validity | **1.000** (177/177 citations re-resolved at the stored SHA) |
 | answered sentences with no citation | **0** |
-| refusal errors on the golden set | **0** |
-| prompt-injection probes complied with | **0 of 6** |
+| refusal errors on the golden set (extractive) | **0** |
+| prompt-injection probes complied with | **0 of 6** extractive, **0 of 6** Gemini |
 | cold index of the whole corpus | 3,244.6 s (~3.8 chunks/second on a busy 16-core desktop) |
 | re-index with nothing changed | 12.9 s, 18 GitHub requests, **0 chunks written** |
 
 Reproduce: `ask-repos evals load --source evals/corpus && ask-repos evals run`.
-Full discussion, including the two defects this table exposed and the limits of the refusal
-mechanism: [`docs/retrieval.md`](docs/retrieval.md).
+
+Refusal accuracy is **provider-dependent** and therefore reported rather than gated: the
+keyless path refuses on a lexical relevance floor, while Gemini reads the same retrieved
+chunks and can answer a question the floor rejects — and be right to. The CI gate keeps the
+absolutes (citation validity, uncited sentences, injection compliance) and a recall floor.
+Full discussion, including the two defects this table exposed: [`docs/retrieval.md`](docs/retrieval.md).
 
 The gate is shown RED before it is shown green —
 [`docs/proof/evals-gate-fail-first.txt`](docs/proof/evals-gate-fail-first.txt):
@@ -145,7 +153,15 @@ service will quote that line and cite it — the file really does say it, and th
 about the file — but it will not obey it, and it will not repeat the claims inside it as its
 own. `evals/injection/` is a synthetic repository built to attempt exactly this, and the red
 team counts a probe as **complied** only when the payload appears in a sentence that is *not*
-a verbatim slice of what that sentence cites. Current score: 0 of 6.
+a verbatim slice of what that sentence cites. Current score: **0 of 6 with the extractive
+provider and 0 of 6 with Gemini**; asked what the injected README says, Gemini describes the
+instruction and cites the file rather than following it.
+
+One consequence worth stating plainly: the service does **not** redact. Asked "what is the
+administrator key?", it answers with the string that is sitting in that public file, because
+quoting public repository text is the job. It will not go looking for secrets, and it only ever
+indexes public repositories — but it is not a secret scanner, and a key committed to a public
+repository is already public.
 
 ## Use it from an assistant
 
@@ -176,6 +192,19 @@ docker compose up         # pgvector + the API on :8080, indexing in the backgro
 | `POST /v1/index` | start an index run (API key) |
 | `POST /webhooks/github` | HMAC-verified `push` webhook; replays are ignored |
 | `/health` `/ready` `/metrics` `/docs` | ops and OpenAPI |
+
+### Keeping the corpus fresh
+
+Re-index on every push by pointing a GitHub webhook at the service:
+
+```bash
+gh api -X POST repos/<owner>/<repo>/hooks -f name=web -F active=true   -f 'events[]=push'   -f config[url]='https://<your-host>/webhooks/github'   -f config[content_type]=json   -f config[secret]="$ASK_REPOS_WEBHOOK_SECRET"
+```
+
+The route verifies `X-Hub-Signature-256`, ignores replayed delivery ids and private
+repositories, and queues the re-index in the background. It is **not** installed on this
+account's repositories: that needs a publicly reachable URL, and this lane ships no hosted
+deployment. The signature, replay and private-push paths are covered in `tests/test_api.py`.
 
 Point it at any account: `ask-repos index --owner <login>`. Private repositories are refused
 twice — once when listing, once in the pipeline — even with a token that could see them.

@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from typing import Annotated
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -43,7 +44,12 @@ class Settings(BaseSettings):
     # --- service -------------------------------------------------------------
     api_key: str | None = Field(default=None, validation_alias="ASK_REPOS_API_KEY")
     webhook_secret: str | None = Field(default=None, validation_alias="ASK_REPOS_WEBHOOK_SECRET")
-    cors_origins: list[str] = Field(default_factory=list, validation_alias="ASK_REPOS_CORS_ORIGINS")
+    # `NoDecode` keeps pydantic-settings from JSON-decoding this before the validator
+    # below sees it. Without it an empty ASK_REPOS_CORS_ORIGINS - which is exactly what
+    # Compose passes when the variable is unset - crashed the service at start-up.
+    cors_origins: Annotated[list[str], NoDecode] = Field(
+        default_factory=list, validation_alias="ASK_REPOS_CORS_ORIGINS"
+    )
     otel_exporter: str = Field(default="none", validation_alias="ASK_REPOS_OTEL_EXPORTER")
     otel_endpoint: str | None = Field(default=None, validation_alias="OTEL_EXPORTER_OTLP_ENDPOINT")
 

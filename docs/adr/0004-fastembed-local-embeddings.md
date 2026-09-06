@@ -32,6 +32,7 @@ search, answering, the MCP server and the whole eval suite run with no key at al
 * The 384-dimension vector width is baked into the schema (`vector(384)` and the HNSW
   index). Changing the embedding model means a migration and a full re-index; the
   `ASK_REPOS_EMBED_MODEL` setting exists but is not a drop-in swap.
-* The container image carries ~145 MB of model weights. That is the price of a service that
-  boots and answers without reaching out to anything.
+* The container image carries ~145 MB of model weights and measures **1.04 GB** in total
+  (onnxruntime, numpy and the LangGraph stack are the rest). That is the price of a service
+  that boots and answers without reaching out to anything.
 * Nothing in the retrieval path can be rate-limited or deprecated by a vendor.

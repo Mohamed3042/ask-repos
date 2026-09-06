@@ -237,12 +237,16 @@ def evals_load(
     only: Annotated[
         str, typer.Option("--only", help="Comma-separated repository names; empty = all")
     ] = "",
+    exclude: Annotated[
+        str, typer.Option("--exclude", help="Comma-separated repository names to skip")
+    ] = "",
 ) -> None:
     """Index the recorded snapshot into the database (no network)."""
     from ask_repos.evals.snapshot import load_snapshot
 
     names = [name for name in only.split(",") if name.strip()] or None
-    stats = load_snapshot(source, force=force, progress=_echo, only=names)
+    skipped = [name for name in exclude.split(",") if name.strip()] or None
+    stats = load_snapshot(source, force=force, progress=_echo, only=names, exclude=skipped)
     _echo(stats.summary())
 
 

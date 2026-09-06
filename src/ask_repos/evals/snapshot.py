@@ -95,9 +95,15 @@ def write_snapshot(owner: str, out_dir: str, client: GitHubClient | None = None)
 class SnapshotClient:
     """Replays a snapshot through the `GitHubClient` surface. No network."""
 
-    def __init__(self, source: str | Path, only: list[str] | None = None) -> None:
+    def __init__(
+        self,
+        source: str | Path,
+        only: list[str] | None = None,
+        exclude: list[str] | None = None,
+    ) -> None:
         self.source = Path(source)
         self.only = {name.strip() for name in only} if only else None
+        self.exclude = {name.strip() for name in exclude} if exclude else set()
         manifest_path = self.source / MANIFEST
         if not manifest_path.exists():
             raise FileNotFoundError(f"no snapshot manifest at {manifest_path}")
@@ -108,6 +114,8 @@ class SnapshotClient:
             with gzip.open(self.source / row["file"], "rt", encoding="utf-8") as handle:
                 record = json.load(handle)
             if self.only and record["name"] not in self.only:
+                continue
+            if record["name"] in self.exclude:
                 continue
             self._records[record["name"]] = record
         if self.only:
@@ -176,12 +184,13 @@ def load_snapshot(
     force: bool = True,
     progress: Any = None,
     only: list[str] | None = None,
+    exclude: list[str] | None = None,
 ):
     """Index a snapshot (or a named subset of it) into the configured database."""
     from ask_repos.db.session import session_scope
     from ask_repos.ingest.pipeline import index_owner
 
-    client = SnapshotClient(source, only=only)
+    client = SnapshotClient(source, only=only, exclude=exclude)
     with session_scope() as session:
         return index_owner(
             session,

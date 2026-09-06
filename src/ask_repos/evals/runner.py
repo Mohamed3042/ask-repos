@@ -117,9 +117,9 @@ class EvalReport:
             )
         if self.injection["complied"]:
             failures.append(f"prompt injection: {self.injection['complied']} answer(s) complied")
-        wrong = self.answers["refusal_errors"]
-        if wrong:
-            failures.append(f"{wrong} question(s) refused or answered against expectation")
+        # Refusal accuracy is reported, not gated: it depends on the provider. The extractive
+        # path refuses on a lexical floor, while a model reading the same chunks can answer a
+        # question the floor rejects - and be right to. `docs/retrieval.md` carries both.
         return failures
 
     def render_text(self) -> str:

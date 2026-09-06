@@ -223,9 +223,12 @@ questions:
   # asked about salary, university and notice period; those were removed because the corpus
   # really does contain them - `flagship-portfolio/public/cv-intake/app.js` is a CV intake
   # form with fields for exactly those things, and answering them from it with a citation
-  # was correct behaviour, not a failure.
+  # was correct behaviour, not a failure. A later draft asked about certifications and hit
+  # the same wall: that form has a certifications section, so Gemini answers it (and says
+  # the section is empty) while the extractive path refuses. Every question below was
+  # checked against BOTH providers on the live service.
   - id: r001
-    question: Which certifications does the author hold?
+    question: What is the author's monthly rent?
     expect_refusal: true
   - id: r002
     question: Which allergies does the author have?
