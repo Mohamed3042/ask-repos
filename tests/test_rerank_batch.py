@@ -8,6 +8,8 @@ value reaches the model call.
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 from ask_repos.config import get_settings
 from ask_repos.retrieval.embed import Reranker
 
@@ -29,7 +31,7 @@ def test_default_batch_size_is_small(monkeypatch):
         fake = _FakeCrossEncoder()
         reranker._model = fake
         assert reranker.score("q", ["p"] * 20) == [0.25] * 20
-        assert fake.calls == [(20, 8)]
+        assert fake.calls == [(20, 4)]
     finally:
         get_settings.cache_clear()
 
@@ -62,3 +64,48 @@ def test_empty_shortlist_never_touches_the_model():
     reranker = Reranker(model_name="fake", cache_dir=None)
     assert reranker.score("q", []) == []
     assert reranker._model is None
+
+
+class _RecordingModel:
+    """Stands in for fastembed's classes: records the constructor call, answers zeros."""
+
+    calls: ClassVar[list[dict]] = []
+
+    def __init__(self, **kwargs):
+        type(self).calls.append(kwargs)
+
+    def rerank(self, query, documents, batch_size=64):
+        return [0.0 for _ in documents]
+
+    def embed(self, texts, batch_size=256):
+        import numpy as np
+
+        return [np.zeros(384, dtype=np.float32) for _ in texts]
+
+    def query_embed(self, texts):
+        return self.embed(texts)
+
+
+def test_the_onnx_arena_is_off_unless_asked(monkeypatch):
+    import fastembed
+    import fastembed.rerank.cross_encoder as cross
+
+    from ask_repos.retrieval.embed import FastEmbedEmbedder
+
+    monkeypatch.delenv("ASK_REPOS_ONNX_ARENA", raising=False)
+    get_settings.cache_clear()
+    _RecordingModel.calls = []
+    monkeypatch.setattr(cross, "TextCrossEncoder", _RecordingModel)
+    monkeypatch.setattr(fastembed, "TextEmbedding", _RecordingModel)
+    try:
+        Reranker(model_name="fake", cache_dir="/tmp/x").score("q", ["p"])
+        FastEmbedEmbedder(model_name="fake", cache_dir="/tmp/x").embed_query("q")
+        assert [c["enable_cpu_mem_arena"] for c in _RecordingModel.calls] == [False, False]
+
+        monkeypatch.setenv("ASK_REPOS_ONNX_ARENA", "1")
+        get_settings.cache_clear()
+        _RecordingModel.calls = []
+        Reranker(model_name="fake", cache_dir="/tmp/x").score("q", ["p"])
+        assert _RecordingModel.calls[0]["enable_cpu_mem_arena"] is True
+    finally:
+        get_settings.cache_clear()

@@ -93,17 +93,23 @@ ENV ASK_REPOS_READONLY=1 \
 # Memory. The hosted instance has 512 MB for PostgreSQL, the embedding model, the reranker
 # and the Python process together. Measured 2026-09-06 on Render Free: the container boots,
 # answers a question, and is killed by the kernel about fifteen seconds later with health
-# checks still green and no traceback; the host's own memory graph stays at ~130 MB between
-# answers. The spike is the reranker scoring the whole shortlist in one batch of 64 pairs -
-# MiniLM's attention on 64 x 512 tokens is ~800 MB of activations. Trimming PostgreSQL alone
-# was measured NOT to be enough. Three settings, none of which changes what the demo serves:
-#   - ASK_REPOS_RERANK_BATCH scores eight pairs per forward pass (a pair's score does not
-#     depend on its batch);
+# checks still green and no traceback; the host's memory graph reads ~130 MB between
+# answers and 331 MB at the last 30-second sample before the kill. Measured locally on the
+# same two models (peak working set of the process, 30 passages): onnxruntime's default
+# memory arena holds 755 MB after one rerank at batch 8 and 1,578 MB at batch 64; with the
+# arena off the steady state is 289 MB and the peak is 323 MB at batch 1, 348 at 2, 410 at 4,
+# 534 at 8 - and every batch size takes the same ~1.1 s on a CPU. Trimming PostgreSQL alone
+# was deployed and measured NOT to be enough; batch 8 with the arena on, likewise. Settings,
+# none of which changes what the demo serves (a pair's score does not depend on its batch,
+# and the arena is a cache, not arithmetic):
+#   - the arena is off by default in the application (ASK_REPOS_ONNX_ARENA=0);
+#   - ASK_REPOS_RERANK_BATCH=1 scores one pair per forward pass (peak 323 MB measured);
 #   - PostgreSQL is a read-only 1.6 MB corpus here, so shared_buffers, worker processes,
 #     autovacuum and parallel query are set to the minimum;
 #   - MALLOC_ARENA_MAX stops glibc from keeping one arena per thread alive for the
 #     onnxruntime and uvicorn thread pools.
-ENV ASK_REPOS_RERANK_BATCH=8 \
+ENV ASK_REPOS_RERANK_BATCH=1 \
+    ASK_REPOS_ONNX_ARENA=0 \
     ASK_REPOS_PG_OPTIONS="-c shared_buffers=16MB -c max_connections=20 -c work_mem=1MB -c maintenance_work_mem=8MB -c autovacuum=off -c max_parallel_workers=0 -c max_worker_processes=2 -c wal_buffers=1MB -c effective_cache_size=64MB -c synchronous_commit=off -c huge_pages=off" \
     MALLOC_ARENA_MAX=2
 

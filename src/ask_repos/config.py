@@ -34,10 +34,17 @@ class Settings(BaseSettings):
         default="Xenova/ms-marco-MiniLM-L-6-v2", validation_alias="ASK_REPOS_RERANK_MODEL"
     )
     rerank_enabled: bool = Field(default=True, validation_alias="ASK_REPOS_RERANK")
-    # Pairs scored per forward pass. The score of a pair does not depend on its batch, so this
-    # is purely a memory knob: MiniLM's attention on a batch of 64 padded to 512 tokens is
-    # ~800 MB of activations, which killed the 512 MB hosted demo mid-answer (2026-09-06).
-    rerank_batch_size: int = Field(default=8, validation_alias="ASK_REPOS_RERANK_BATCH")
+    # Pairs scored per forward pass. A pair's score does not depend on its batch, so this is
+    # purely a memory knob. Measured 2026-09-06 with the arena off, 30 passages, peak working
+    # set of the whole process: batch 1 → 323 MB, 2 → 348 MB, 4 → 410 MB, 8 → 534 MB, and all
+    # of them take the same ~1.1 s on a CPU, so batching buys nothing here. The 512 MB hosted
+    # demo runs at 1 (see deploy/hf-space/Dockerfile).
+    rerank_batch_size: int = Field(default=4, validation_alias="ASK_REPOS_RERANK_BATCH")
+    # onnxruntime's CPU memory arena keeps every buffer it ever grew to. Measured on this
+    # repository's two models (peak working set, 30 passages): arena on, batch 8 → 755 MB,
+    # batch 64 → 1,578 MB; arena off, batch 8 → 534 MB peak and 289 MB steady. Off by default,
+    # so memory is predictable; ASK_REPOS_ONNX_ARENA=1 buys ~25 % throughput on a big machine.
+    onnx_cpu_mem_arena: bool = Field(default=False, validation_alias="ASK_REPOS_ONNX_ARENA")
     model_cache_dir: str | None = Field(default=None, validation_alias="ASK_REPOS_MODEL_CACHE")
 
     # --- generation (optional) ----------------------------------------------
