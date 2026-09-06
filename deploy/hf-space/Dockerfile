@@ -112,16 +112,10 @@ ENV ASK_REPOS_READONLY=1 \
 #     autovacuum and parallel query are set to the minimum;
 #   - MALLOC_ARENA_MAX stops glibc from keeping one arena per thread alive for the
 #     onnxruntime and uvicorn thread pools.
-# glibc: with onnxruntime's arena off, each forward pass allocates its activation buffers
-# afresh; by default glibc serves those with mmap and unmaps them on free, so every pass
-# page-faults tens of MB back in - on a 0.1-CPU instance that was measured at 85-137 s per
-# answer (six-question hammer, 2026-09-07). Raising the mmap and trim thresholds keeps freed
-# memory in the heap for the next pass; the resident high-water mark is the peak already
-# measured with the arena off, not the arena's power-of-two overgrowth.
-ENV MALLOC_MMAP_THRESHOLD_=268435456 \
-    MALLOC_TRIM_THRESHOLD_=536870912 \
-    MALLOC_TOP_PAD_=67108864
-
+# Tried and reverted (2026-09-07): raising glibc's mmap/trim thresholds so freed activation
+# buffers stay in the heap between forward passes. Two concurrent answers then killed the
+# container again (no exit line at all - a whole-group kill), where the same image without
+# the thresholds had answered six in a row. Memory beats latency here.
 ENV ASK_REPOS_CPUSET=0 \
     ASK_REPOS_RERANK_BATCH=1 \
     ASK_REPOS_ONNX_ARENA=0 \
