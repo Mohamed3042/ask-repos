@@ -42,7 +42,11 @@ class FastEmbedEmbedder:
                 if self._model is None:
                     from fastembed import TextEmbedding
 
-                    self._model = TextEmbedding(model_name=self.name, cache_dir=self._cache_dir)
+                    self._model = TextEmbedding(
+                        model_name=self.name,
+                        cache_dir=self._cache_dir,
+                        enable_cpu_mem_arena=get_settings().onnx_cpu_mem_arena,
+                    )
         return self._model
 
     def embed(self, texts: Sequence[str]) -> list[list[float]]:
@@ -108,7 +112,11 @@ class Reranker:
                 if self._model is None:
                     from fastembed.rerank.cross_encoder import TextCrossEncoder
 
-                    self._model = TextCrossEncoder(model_name=self.name, cache_dir=self._cache_dir)
+                    self._model = TextCrossEncoder(
+                        model_name=self.name,
+                        cache_dir=self._cache_dir,
+                        enable_cpu_mem_arena=get_settings().onnx_cpu_mem_arena,
+                    )
         return self._model
 
     def score(self, query: str, passages: Sequence[str]) -> list[float]:

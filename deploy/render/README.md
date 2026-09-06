@@ -44,14 +44,27 @@ the Dockerfile puts the bake before the entrypoint and environment layers.
 
 ## What 512 MB taught the reranker
 
-The first deploy built, booted, answered one question and was killed by the kernel about
-fifteen seconds later — health checks still green, no traceback, and Render's own memory graph
-flat at ~130 MB between answers. Trimming PostgreSQL (`ASK_REPOS_PG_OPTIONS`) was measured
-**not** to be enough on its own. The spike was the cross-encoder scoring the whole 30-passage
-shortlist in fastembed's default batch of 64: MiniLM's attention on 64 × 512 tokens is on the
-order of 800 MB of activations. `ASK_REPOS_RERANK_BATCH` (default 8) now reaches the model
-call; a pair's score does not depend on its batch, so the retrieval numbers in `docs/retrieval.md`
-describe the hosted demo unchanged. Both settings are in `deploy/hf-space/Dockerfile`.
+The first working deploy built, booted, answered one question and was killed by the kernel
+about fifteen seconds later — health checks still green, no traceback, Render's memory graph
+~130 MB between answers and 331 MB at the last 30-second sample before the kill. Three fixes
+were deployed and measured in turn:
+
+| deploy | change | six-question hammer |
+|---|---|---|
+| PostgreSQL trimmed (`ASK_REPOS_PG_OPTIONS`) | smaller shared_buffers, no autovacuum, no parallel workers | killed after answer 1 |
+| reranker batch 64 → 8 (`ASK_REPOS_RERANK_BATCH`) | fewer pairs per forward pass | killed after answer 1 |
+| onnxruntime arena off + batch 1 | see below | measured after this merge; the number is in the repository's brief |
+
+The instrument that settled it was local: peak working set of one process loading the same two
+models and scoring 30 passages. With onnxruntime's default CPU memory arena the process holds
+**755 MB** after one rerank at batch 8 (1,578 MB at batch 64) — the arena keeps every buffer it
+ever grew to. With the arena off (`enable_cpu_mem_arena=False`, exposed by fastembed) the steady
+state is 289 MB and the peak is 323 MB at batch 1, 348 at 2, 410 at 4, 534 at 8 — and every
+batch size takes the same ~1.1 s on a CPU, so batching buys nothing here. The application now
+runs both sessions with the arena off by default (`ASK_REPOS_ONNX_ARENA=1` turns it back on) and
+the hosted image scores one pair per pass. Neither changes a score: the arena is a cache, not
+arithmetic, and a pair's score does not depend on its batch, so `docs/retrieval.md` still
+describes the hosted demo. All settings are in `deploy/hf-space/Dockerfile`.
 
 Before that, the very first deploy exited with status 128 before printing a line: the
 entrypoint had been committed as mode 100644. Docker Desktop on Windows copies files from a
