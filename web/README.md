@@ -24,6 +24,7 @@ The API has to be running: `docker compose up -d db api` from the repository roo
 | `npm run prove:gates` | sabotages `blobUrl` on a copy and requires the suite to go red, then green |
 | `npm run prove:gates:e2e` | the same for the browser assertion |
 | `npm run sync:evals` / `check:evals` | copy the eval report CI gates on into `data/`, or verify the committed copy still matches |
+| `npm run check:lock` | asserts the lock file still carries the Linux-only optional packages `npm ci` needs |
 | `npm run shots` | regenerate every screenshot in the documentation (`SHOTS=1`) |
 | `npm run demo:record` + `demo:gif` | re-record `docs/proof/demo.gif` |
 

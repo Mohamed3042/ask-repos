@@ -21,7 +21,8 @@
     "prove:gates:e2e": "node scripts/prove-fails-first.mjs --e2e",
     "shots": "playwright test shots",
     "demo:record": "playwright test demo",
-    "demo:gif": "node scripts/make-demo-gif.mjs"
+    "demo:gif": "node scripts/make-demo-gif.mjs",
+    "check:lock": "node scripts/check-lock.mjs"
   },
   "dependencies": {
     "@opentelemetry/api": "1.9.1",

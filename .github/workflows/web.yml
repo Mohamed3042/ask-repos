@@ -23,6 +23,10 @@ jobs:
           node-version: "22"
           cache: npm
           cache-dependency-path: web/package-lock.json
+      - name: The lock file was generated on Linux
+        # npm ci's own message for this is four lines of usage text; this one says what to
+        # do. Runs before the install so it is the first thing that fails.
+        run: node scripts/check-lock.mjs
       - run: npm ci
       - name: Lint
         run: npm run lint
