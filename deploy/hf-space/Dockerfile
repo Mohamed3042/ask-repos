@@ -112,7 +112,8 @@ ENV ASK_REPOS_READONLY=1 \
 #     autovacuum and parallel query are set to the minimum;
 #   - MALLOC_ARENA_MAX stops glibc from keeping one arena per thread alive for the
 #     onnxruntime and uvicorn thread pools.
-ENV ASK_REPOS_RERANK_BATCH=1 \
+ENV ASK_REPOS_CPUSET=0 \
+    ASK_REPOS_RERANK_BATCH=1 \
     ASK_REPOS_ONNX_ARENA=0 \
     ASK_REPOS_PG_OPTIONS="-c shared_buffers=16MB -c max_connections=20 -c work_mem=1MB -c maintenance_work_mem=8MB -c autovacuum=off -c max_parallel_workers=0 -c max_worker_processes=2 -c wal_buffers=1MB -c effective_cache_size=64MB -c synchronous_commit=off -c huge_pages=off" \
     MALLOC_ARENA_MAX=2

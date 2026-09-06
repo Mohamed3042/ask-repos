@@ -36,7 +36,16 @@ ask-repos corpus || echo "ask-repos: corpus summary unavailable at start-up"
 #     recorded here and in deploy/render/README.md;
 #   - when the server does die, the shell can say HOW: 137 is the kernel's memory kill,
 #     139 a native crash, anything else Python - and hands that status to the host.
-ask-repos serve --host 0.0.0.0 --port "${PORT:-7860}" &
+# ASK_REPOS_CPUSET=<cpu list>: pin the server to those CPUs. onnxruntime and the tokenizer size
+# their thread pools from the CPUs they can see, which on a shared 0.1-CPU instance is the
+# host's whole core count - pools that mostly spin against each other for a sliver of one
+# core. Pinning to one CPU makes them one thread each. Measured in deploy/render/README.md.
+if [ -n "${ASK_REPOS_CPUSET:-}" ] && command -v taskset >/dev/null 2>&1; then
+  taskset -c "${ASK_REPOS_CPUSET}" ask-repos serve --host 0.0.0.0 --port "${PORT:-7860}" &
+else
+  [ -n "${ASK_REPOS_CPUSET:-}" ] && echo "ask-repos: ASK_REPOS_CPUSET set but taskset is missing; running unpinned"
+  ask-repos serve --host 0.0.0.0 --port "${PORT:-7860}" &
+fi
 server=$!
 trap 'kill -TERM "$server" 2>/dev/null; pg_ctl -D "$PGDATA" -m fast stop >/dev/null 2>&1 || true' TERM INT
 
