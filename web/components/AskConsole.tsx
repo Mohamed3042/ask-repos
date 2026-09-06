@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 
 import { CitationChip } from "@/components/CitationChip";
 import { answerToMarkdown } from "@/lib/citations";
+import { readEvents } from "@/lib/sse";
 import { EXAMPLE_QUESTIONS, dictionaryFor, type Locale } from "@/lib/i18n";
 import type { AskDone, ReindexRequest, Sentence } from "@/lib/types";
 
@@ -30,50 +31,6 @@ const EMPTY: State = {
   error: null,
   traceId: null,
 };
-
-/**
- * Reads the server-sent event stream by hand.
- *
- * `EventSource` cannot POST, so the stream is read off `fetch` and split on the blank
- * line that terminates an SSE frame. Frames arrive whole or not at all: a partial frame
- * stays in the buffer until its terminator shows up, which is why the buffer is carried
- * across reads instead of being parsed per chunk.
- */
-async function* readEvents(
-  body: ReadableStream<Uint8Array>,
-  signal: AbortSignal,
-): AsyncGenerator<{ event: string; data: unknown }> {
-  const reader = body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  try {
-    while (!signal.aborted) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      let boundary = buffer.indexOf("\n\n");
-      while (boundary !== -1) {
-        const frame = buffer.slice(0, boundary);
-        buffer = buffer.slice(boundary + 2);
-        boundary = buffer.indexOf("\n\n");
-        let event = "message";
-        const dataLines: string[] = [];
-        for (const line of frame.split("\n")) {
-          if (line.startsWith("event:")) event = line.slice(6).trim();
-          else if (line.startsWith("data:")) dataLines.push(line.slice(5).trim());
-        }
-        if (!dataLines.length) continue;
-        try {
-          yield { event, data: JSON.parse(dataLines.join("\n")) };
-        } catch {
-          /* a frame that is not JSON is not ours; skip it rather than kill the stream */
-        }
-      }
-    }
-  } finally {
-    reader.releaseLock();
-  }
-}
 
 export function AskConsole({ locale, repo }: { locale: Locale; repo?: string }) {
   const dictionary = dictionaryFor(locale);
