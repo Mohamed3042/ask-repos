@@ -12,7 +12,9 @@ renders the committed CI report, unflattering numbers included. English and Arab
 real right-to-left, light and dark, no UI framework.
 
 - Interface: **https://ask-repos-live.netlify.app**
-- API: **https://medo4334-ask-repos.hf.space** (read-only, 12 requests/minute)
+- API: **https://ask-repos.onrender.com** (read-only, 12 requests/minute) — hosted on Render
+  Free rather than the Hugging Face Space this note first named: the Space returned
+  `402 Payment Required` (PRO subscription needed) and was never published; see `deploy/render/`.
 
 **Proof:**
 

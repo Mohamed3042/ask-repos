@@ -30,7 +30,11 @@ from pathlib import Path
 from typing import Any
 
 WINDOW = 24 * 30  # keep 30 days of hourly samples
-TIMEOUT = 30.0
+# The API runs on a Free instance that sleeps after ~15 minutes idle and takes 30 s or more to
+# wake, so an hourly probe almost always arrives at a sleeping service. A timeout that cannot
+# outlast the wake would record every hour as "prober unreachable"; 90 s records the wake as
+# a slow success with its latency in the sample, which is what actually happened.
+TIMEOUT = 90.0
 
 
 def probe(url: str) -> dict[str, Any]:

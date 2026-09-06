@@ -38,7 +38,7 @@ flowchart TB
     subgraph netlify["Netlify — ask-repos-live.netlify.app"]
         NX["Next.js 15 App Router<br/>server components + /api/* route handlers"]
     end
-    subgraph hf["Hugging Face Space — medo4334-ask-repos.hf.space"]
+    subgraph hf["Render Free web service — ask-repos.onrender.com"]
         DOCK["one Docker container<br/>ghcr.io/mohamed3042/ask-repos + PostgreSQL 16 + pgvector"]
         PGD[("PGDATA built at image-build time<br/>14 repos · 250 files · 1,625 chunks")]
         DOCK --- PGD

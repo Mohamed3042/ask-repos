@@ -26,7 +26,7 @@ jobs:
       - name: Probe both URLs
         run: |
           python scripts/uptime_probe.py \
-            --api https://medo4334-ask-repos.hf.space/health \
+            --api https://ask-repos.onrender.com/health \
             --web https://ask-repos-live.netlify.app/ \
             --out docs/proof
       - name: Commit the sample

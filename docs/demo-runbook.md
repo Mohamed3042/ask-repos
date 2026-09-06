@@ -15,7 +15,7 @@ The local one is for a room with no internet, or when you want to show the machi
 | | |
 |---|---|
 | Interface | <https://ask-repos-live.netlify.app> |
-| API | <https://medo4334-ask-repos.hf.space> · `/docs` for OpenAPI |
+| API | <https://ask-repos.onrender.com> · `/docs` for OpenAPI · a Free instance that sleeps after ~15 min idle, so open it a minute before you present |
 | Corpus | 14 public repositories of `Mohamed3042` — 250 files, 1,625 chunks, frozen |
 
 Read-only and rate limited to 12 questions a minute per visitor. Say that out loud once;
