@@ -1,4 +1,4 @@
-# ask-repos — a question-answering service over public GitHub repositories that refuses rather than guesses
+# ask-repos - a question-answering service over public GitHub repositories that refuses rather than guesses
 
 **What:** New public repository. Point `ask-repos` at any GitHub account and it indexes that
 account's public repositories, then answers questions about them with anchors of the form

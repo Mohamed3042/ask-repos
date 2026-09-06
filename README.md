@@ -185,6 +185,12 @@ cp .env.example .env      # every value has a working default
 docker compose up         # pgvector + the API on :8080, indexing in the background
 ```
 
+Or pull the published image directly:
+
+```bash
+docker pull ghcr.io/mohamed3042/ask-repos:latest
+```
+
 | route | what it does |
 |---|---|
 | `POST /v1/ask` | answer with citations, or refuse |
