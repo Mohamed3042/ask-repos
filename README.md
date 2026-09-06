@@ -27,12 +27,18 @@ alternative trustworthy.
 | | |
 |---|---|
 | **Interface** | **<https://ask-repos-live.netlify.app>** — ask, see the citation chips, open the lines |
-| **API** | **<https://medo4334-ask-repos.hf.space>** — `/docs`, `/v1/corpus`, `/health` |
+| **API** | **<https://ask-repos.onrender.com>** — `/docs`, `/v1/corpus`, `/health` |
 
 The hosted demo is **read-only and rate limited**: a fixed 14-repository corpus (250 files,
 1,625 chunks) baked into the image, 12 questions a minute per visitor, and `POST /v1/index`,
 the push webhook and *approving* a re-index all answering 403. The approval interrupt still
 fires — that gate is the thing worth showing. Run it yourself to point it at any account.
+
+The API runs on a Render **Free** instance built from [`deploy/hf-space/Dockerfile`](deploy/hf-space/Dockerfile)
+(one container: the CI-published image plus PostgreSQL 16 and pgvector, corpus baked in at
+build time). Free instances sleep after ~15 minutes idle, so the first question after a pause
+can take 30 s or more while it wakes; the interface says so. How it was created, what it
+cost, and what 512 MB taught the reranker: [`deploy/render/`](deploy/render/).
 
 ![answers with citation chips](docs/proof/shots/local-ask-answered.png)
 
