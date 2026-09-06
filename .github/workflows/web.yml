@@ -96,6 +96,16 @@ jobs:
             sleep 2
           done
           curl -fsS http://127.0.0.1:8080/v1/corpus | head -c 300; echo
+      - name: Warm the retrieval path
+        working-directory: .
+        # The cross-encoder reranker is loaded lazily on the first question, and that
+        # first call took long enough on a cold container to time out a browser test
+        # locally. Paying for it here means the suite measures the service, not the
+        # model loader.
+        run: |
+          time curl -fsS -X POST http://127.0.0.1:8080/v1/ask             -H 'content-type: application/json'             -d '{"question":"Which Kuwait branches does the Retail Ops Hub demo cover?","provider":"extractive"}'             | head -c 200; echo
+      - name: The lock file was generated on Linux
+        run: node scripts/check-lock.mjs
       - run: npm ci
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
