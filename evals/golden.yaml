@@ -1,0 +1,253 @@
+# Golden set for ask-repos.
+#
+# Authored by reading the frozen corpus in `evals/corpus/` (16 public repositories of the
+# account Mohamed3042, 517 files, 6,018 chunks). Every `must_cite` entry is a file that was
+# read and does answer the question; retrieval scores a hit when any of them appears.
+#
+# The `expect_refusal: true` questions are things a reader might genuinely ask that the
+# corpus cannot answer. They are deliberately worded the way a person would word them, not
+# tuned to defeat the retriever.
+version: 1
+corpus: "Mohamed3042 public repositories, snapshot evals/corpus"
+
+questions:
+  # -- petpoint-ops-hub -------------------------------------------------------
+  - id: q001
+    question: Which Kuwait branches does the Retail Ops Hub demo cover?
+    must_cite: ["Mohamed3042/petpoint-ops-hub/README.md"]
+  - id: q002
+    question: How does the pet retail hub turn repeat pet-food orders into reminders?
+    must_cite: ["Mohamed3042/petpoint-ops-hub/README.md"]
+  - id: q003
+    question: Which database does the Retail Ops Hub store its data in?
+    must_cite:
+      ["Mohamed3042/petpoint-ops-hub/README.md", "Mohamed3042/petpoint-ops-hub/app/db.py"]
+  - id: q004
+    question: Which module computes the analytics for the pet retail operations hub?
+    must_cite: ["Mohamed3042/petpoint-ops-hub/app/analytics.py"]
+  - id: q005
+    question: How does petpoint-ops-hub generate its daily and weekly report files?
+    must_cite:
+      [
+        "Mohamed3042/petpoint-ops-hub/app/reporting.py",
+        "Mohamed3042/petpoint-ops-hub/README.md",
+      ]
+  - id: q006
+    question: What does the petpoint ops hub say about grooming no-show risk flags?
+    must_cite: ["Mohamed3042/petpoint-ops-hub/README.md"]
+
+  # -- RelayOps (ai-automation-command-center) --------------------------------
+  - id: q007
+    question: What is RelayOps and what does it control?
+    must_cite: ["Mohamed3042/ai-automation-command-center/README.md"]
+  - id: q008
+    question: Does the RelayOps runtime need any third-party Python dependency or API key?
+    must_cite: ["Mohamed3042/ai-automation-command-center/README.md"]
+  - id: q009
+    question: What is the alert lifecycle in RelayOps?
+    must_cite:
+      [
+        "Mohamed3042/ai-automation-command-center/README.md",
+        "Mohamed3042/ai-automation-command-center/app/alerts.py",
+      ]
+  - id: q010
+    question: How does the RelayOps scheduler decide when a workflow job should fire?
+    must_cite: ["Mohamed3042/ai-automation-command-center/app/scheduler.py"]
+  - id: q011
+    question: Which address does RelayOps serve its dashboard on after you run the server?
+    must_cite: ["Mohamed3042/ai-automation-command-center/README.md"]
+  - id: q012
+    question: What happens in RelayOps when a workflow step fails terminally?
+    must_cite:
+      [
+        "Mohamed3042/ai-automation-command-center/README.md",
+        "Mohamed3042/ai-automation-command-center/app/engine.py",
+      ]
+  - id: q013
+    question: What does the RelayOps order automation do with staged POS and web orders?
+    must_cite: ["Mohamed3042/ai-automation-command-center/README.md"]
+
+  # -- enterprise-ai-automation-templates -------------------------------------
+  - id: q014
+    question: What do the G1 to G7 safety invariants guarantee?
+    must_cite:
+      [
+        "Mohamed3042/enterprise-ai-automation-templates/README.md",
+        "Mohamed3042/enterprise-ai-automation-templates/docs/safety-framework.md",
+      ]
+  - id: q015
+    question: How does the enterprise automation template prove every consequential transition?
+    must_cite:
+      [
+        "Mohamed3042/enterprise-ai-automation-templates/README.md",
+        "Mohamed3042/enterprise-ai-automation-templates/docs/safety-framework.md",
+      ]
+  - id: q016
+    question: Which three demos ship with the enterprise AI automation templates?
+    must_cite: ["Mohamed3042/enterprise-ai-automation-templates/README.md"]
+  - id: q017
+    question: Which command starts the enterprise automation templates demo dashboard?
+    must_cite: ["Mohamed3042/enterprise-ai-automation-templates/README.md"]
+  - id: q018
+    question: What is the discovery playbook in the enterprise automation templates for?
+    must_cite:
+      [
+        "Mohamed3042/enterprise-ai-automation-templates/docs/discovery-playbook.md",
+        "Mohamed3042/enterprise-ai-automation-templates/README.md",
+      ]
+  - id: q019
+    question: Is the Claude adapter the default adapter in the enterprise automation templates?
+    must_cite: ["Mohamed3042/enterprise-ai-automation-templates/README.md"]
+  - id: q020
+    question: What does the architecture document of the enterprise automation templates describe?
+    must_cite: ["Mohamed3042/enterprise-ai-automation-templates/docs/architecture.md"]
+
+  # -- polyblast-arena --------------------------------------------------------
+  - id: q021
+    question: Which engine and language is Polyblast Arena built in?
+    must_cite: ["Mohamed3042/polyblast-arena/README.md"]
+  - id: q022
+    question: How many weapons and maps does Polyblast Arena ship with?
+    must_cite: ["Mohamed3042/polyblast-arena/README.md"]
+  - id: q023
+    question: At what rate does the Polyblast Arena simulation run?
+    must_cite: ["Mohamed3042/polyblast-arena/README.md"]
+  - id: q024
+    question: What decides what the Polyblast Arena bots do?
+    must_cite:
+      ["Mohamed3042/polyblast-arena/bots/bot_brain.gd", "Mohamed3042/polyblast-arena/README.md"]
+  - id: q025
+    question: Which game modes can a player choose in Polyblast Arena?
+    must_cite: ["Mohamed3042/polyblast-arena/README.md"]
+  - id: q026
+    question: Where do the 3D assets in Polyblast Arena come from?
+    must_cite: ["Mohamed3042/polyblast-arena/README.md"]
+  - id: q027
+    question: What does the Polyblast Arena heads-up display draw?
+    must_cite: ["Mohamed3042/polyblast-arena/client/hud.gd"]
+
+  # -- prompt-king ------------------------------------------------------------
+  - id: q028
+    question: What files does a Prompt King run produce?
+    must_cite: ["Mohamed3042/prompt-king/README.md"]
+  - id: q029
+    question: Which video model does Prompt King compute a credit bill for?
+    must_cite: ["Mohamed3042/prompt-king/README.md"]
+
+  # -- god-mode-portfolio -----------------------------------------------------
+  - id: q030
+    question: How many brand-styled worlds does the God Mode portfolio transform into?
+    must_cite: ["Mohamed3042/god-mode-portfolio/README.md"]
+  - id: q031
+    question: Which web framework is the God Mode portfolio built with?
+    must_cite:
+      [
+        "Mohamed3042/god-mode-portfolio/README.md",
+        "Mohamed3042/god-mode-portfolio/package.json",
+        "Mohamed3042/god-mode-portfolio/astro.config.mjs",
+      ]
+
+  # -- reclaim-demo -----------------------------------------------------------
+  - id: q032
+    question: What can a visitor try in the Reclaim demo?
+    must_cite: ["Mohamed3042/reclaim-demo/README.md"]
+  - id: q033
+    question: Can the Reclaim demo page inspect or change the visitor's computer?
+    must_cite:
+      ["Mohamed3042/reclaim-demo/README.md", "Mohamed3042/reclaim-demo/PRIVACY.md"]
+
+  # -- mk-editor-demo ---------------------------------------------------------
+  - id: q034
+    question: What is MK Editor and who is it for?
+    must_cite: ["Mohamed3042/mk-editor-demo/README.md"]
+  - id: q035
+    question: Why does the MK Editor demo not ship the product source code?
+    must_cite: ["Mohamed3042/mk-editor-demo/README.md"]
+
+  # -- macroforge-demo --------------------------------------------------------
+  - id: q036
+    question: Under which licence was MacroForge v1.0.0 released?
+    must_cite: ["Mohamed3042/macroforge-demo/README.md"]
+  - id: q037
+    question: What is deliberately not included in the public MacroForge repository?
+    must_cite: ["Mohamed3042/macroforge-demo/README.md"]
+
+  # -- the portfolio sites ----------------------------------------------------
+  - id: q038
+    question: Where is the flagship portfolio deployed?
+    must_cite:
+      [
+        "Mohamed3042/flagship-portfolio/netlify.toml",
+        "Mohamed3042/flagship-portfolio/README.md",
+        "Mohamed3042/flagship-portfolio/DEPLOY-STATUS.md",
+      ]
+  - id: q039
+    question: Which build tooling does the flagship portfolio use?
+    must_cite:
+      [
+        "Mohamed3042/flagship-portfolio/package.json",
+        "Mohamed3042/flagship-portfolio/astro.config.mjs",
+      ]
+  - id: q040
+    question: What is the Flagship One Page site and which languages does it use?
+    must_cite: ["Mohamed3042/Flagship-One-Page/README.md"]
+  - id: q041
+    question: What does the sheep business management demo show, and what stays private?
+    must_cite:
+      [
+        "Mohamed3042/sheep-business-management-demo/README.md",
+        "Mohamed3042/sheep-business-management-demo/SECURITY.md",
+      ]
+  - id: q042
+    question: What is the Cake Studio demo repository?
+    must_cite: ["Mohamed3042/cake-studio-demo/README.md"]
+  - id: q043
+    question: What does the quotation builder demo let a visitor do?
+    must_cite: ["Mohamed3042/quotation-builder-demo/README.md"]
+  - id: q044
+    question: How does the quotation builder demo prove its checks fail first?
+    must_cite:
+      [
+        "Mohamed3042/quotation-builder-demo/tools/prove_fail_first.py",
+        "Mohamed3042/quotation-builder-demo/README.md",
+      ]
+  - id: q045
+    question: What is the medmac-work repository?
+    must_cite: ["Mohamed3042/medmac-work/README.md"]
+  - id: q046
+    question: What is the flagship-disney-media repository for?
+    must_cite: ["Mohamed3042/flagship-disney-media/README.md"]
+
+  # -- questions the corpus cannot answer -------------------------------------
+  # Each of these was checked against the corpus before being written down. Earlier drafts
+  # asked about salary, university and notice period; those were removed because the corpus
+  # really does contain them - `flagship-portfolio/public/cv-intake/app.js` is a CV intake
+  # form with fields for exactly those things, and answering them from it with a citation
+  # was correct behaviour, not a failure. A later draft asked about certifications and hit
+  # the same wall: that form has a certifications section, so Gemini answers it (and says
+  # the section is empty) while the extractive path refuses. Every question below was
+  # checked against BOTH providers on the live service.
+  - id: r001
+    question: What is the author's monthly rent?
+    expect_refusal: true
+  - id: r002
+    question: Which allergies does the author have?
+    expect_refusal: true
+  - id: r003
+    question: What is the author's blood type?
+    expect_refusal: true
+  - id: r004
+    question: How long is the author's commute to the office?
+    expect_refusal: true
+  - id: r005
+    question: What did the author's last performance review conclude?
+    expect_refusal: true
+  - id: r006
+    question: Which medication regimen does the author follow?
+    expect_refusal: true
+  - id: r007
+    question: Which football team does the author support?
+    expect_refusal: true
+  - id: r008
+    question: Which car does the author drive?
+    expect_refusal: true

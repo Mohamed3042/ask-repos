@@ -19,6 +19,7 @@ from typing import Any, Protocol
 
 import httpx
 
+from ask_repos.agent.cite_check import content_words as _content_words
 from ask_repos.config import get_settings
 from ask_repos.retrieval.search import Hit
 
@@ -121,34 +122,43 @@ class ExtractiveProvider:
     It also has to be able to say nothing. Retrieval always returns its best `k` chunks,
     however weak, so without a relevance floor this provider would quote something for
     every question ever asked and the service could never refuse. A chunk is quoted only
-    when it actually shares `min_relevance` of the question's content words.
+    when it shares at least `min_relevance` of the question's content words.
+
+    The floor is lexical, which makes it blunt: a question about salaries aimed at a
+    corpus of code is refused because none of its words are there, but a question that
+    happens to reuse common words from the corpus ("which repositories are private?")
+    can still be answered with a quotation. `docs/retrieval.md` reports what that costs
+    on the golden set rather than hiding it.
     """
 
     name = "extractive"
 
-    def __init__(self, max_sentences: int = 4, min_relevance: float = 0.2) -> None:
+    def __init__(self, max_sentences: int = 4, min_relevance: float = 0.4) -> None:
         self.max_sentences = max_sentences
         self.min_relevance = min_relevance
 
-    def relevance(self, question: str, text: str) -> float:
-        from ask_repos.agent.cite_check import content_words
+    def relevance(self, question: str, text: str) -> tuple[float, int]:
+        """(fraction of the question's content words present, how many matched)."""
+        from ask_repos.agent.cite_check import count_matches
 
-        words = content_words(question)
+        words = _content_words(question)
         if not words:
-            return 0.0
-        haystack = set(content_words(text))
-        hits = sum(
-            1 for word in words if word in haystack or any(word in token for token in haystack)
-        )
-        return hits / len(words)
+            return 0.0, 0
+        matched = count_matches(words, set(_content_words(text)))
+        return matched / len(words), matched
 
     def draft(self, question: str, hits: list[Hit]) -> Draft:
         sentences: list[dict[str, Any]] = []
         for hit in hits:
             if len(sentences) >= self.max_sentences:
                 break
-            passage = f"{hit.path} {hit.symbol or ''}\n{hit.text}"
-            if self.relevance(question, passage) < self.min_relevance:
+            # The repository name is part of the evidence's identity, so a question that
+            # names a repository counts that as a match. Both forms are offered because
+            # `owner/name` tokenises as one word.
+            short_name = hit.repo.split("/")[-1]
+            passage = f"{hit.repo} {short_name} {hit.path} {hit.symbol or ''}\n{hit.text}"
+            fraction, _matched = self.relevance(question, passage)
+            if fraction < self.min_relevance:
                 continue
             body = _excerpt(hit.text)
             if not body:

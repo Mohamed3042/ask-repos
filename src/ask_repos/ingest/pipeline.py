@@ -177,7 +177,8 @@ def index_repo(
 
     written_files = 0
     written_chunks = 0
-    for start in range(0, len(to_fetch), FETCH_BATCH):
+    total_batches = (len(to_fetch) + FETCH_BATCH - 1) // FETCH_BATCH
+    for number, start in enumerate(range(0, len(to_fetch), FETCH_BATCH), start=1):
         batch = to_fetch[start : start + FETCH_BATCH]
         blobs = client.get_blobs_text(meta.owner, meta.name, [sha for _, sha in batch])
         for path, blob_sha in batch:
@@ -220,6 +221,11 @@ def index_repo(
         # Commit each batch so the session never carries thousands of pending rows.
         session.commit()
         session.expunge_all()
+        if progress and total_batches > 1:
+            progress(
+                f"    {meta.full_name}: batch {number}/{total_batches} — "
+                f"{written_files} files, {written_chunks} chunks so far"
+            )
 
     stats.chunks_written += written_chunks
     session.execute(

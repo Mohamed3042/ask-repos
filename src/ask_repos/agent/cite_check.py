@@ -182,17 +182,30 @@ def content_words(sentence: str) -> list[str]:
     ]
 
 
+def word_matches(word: str, token: str) -> bool:
+    """Whole-word match with a two-character tolerance for inflections.
+
+    A plain substring test looked reasonable and was not: `author` matched `authored`,
+    `authorization` and `authoritative`, which let "What is the author's shoe size?" score
+    0.67 against a stylesheet. Prefix equality with a short suffix keeps `chunk`/`chunks`
+    and `index`/`indexed` while dropping the accidents.
+    """
+    if word == token:
+        return True
+    longer, shorter = (token, word) if len(token) >= len(word) else (word, token)
+    return longer.startswith(shorter) and len(longer) - len(shorter) <= 2
+
+
+def count_matches(words: list[str], haystack: set[str]) -> int:
+    return sum(1 for word in words if any(word_matches(word, token) for token in haystack))
+
+
 def support_score(sentence: str, evidence: str) -> float:
     """Fraction of the sentence's content words that appear in the cited text."""
     words = content_words(sentence)
     if not words:
         return 0.0
-    haystack = set(content_words(evidence))
-    # Sub-token match so `fastembed` matches `fastembed.embed` and `L12-L40` matches `L12`.
-    hits = sum(
-        1 for word in words if word in haystack or any(word in token for token in haystack)
-    )
-    return hits / len(words)
+    return count_matches(words, set(content_words(evidence))) / len(words)
 
 
 def split_sentences(text: str) -> list[str]:

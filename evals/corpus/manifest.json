@@ -1,0 +1,119 @@
+{
+  "owner": "Mohamed3042",
+  "captured_at": "2026-09-05T19:28:01.517888+00:00",
+  "max_file_bytes": 200000,
+  "repos": [
+    {
+      "full_name": "Mohamed3042/petpoint-ops-hub",
+      "file": "petpoint-ops-hub.json.gz",
+      "files": 25,
+      "bytes": 147639,
+      "tree_sha": "df2c1ed3100b91b45b175476e1f13bc15126f382"
+    },
+    {
+      "full_name": "Mohamed3042/flagship-portfolio",
+      "file": "flagship-portfolio.json.gz",
+      "files": 251,
+      "bytes": 4331595,
+      "tree_sha": "bc6d30ece8affc0c6d5105569e04257357598077"
+    },
+    {
+      "full_name": "Mohamed3042/sheep-business-management-demo",
+      "file": "sheep-business-management-demo.json.gz",
+      "files": 10,
+      "bytes": 82596,
+      "tree_sha": "8695420020a32a7fa804a10e0dc9b20a11063cfe"
+    },
+    {
+      "full_name": "Mohamed3042/macroforge-demo",
+      "file": "macroforge-demo.json.gz",
+      "files": 6,
+      "bytes": 47557,
+      "tree_sha": "9bb4ca80add45b898f53e1e988ed5b668904934b"
+    },
+    {
+      "full_name": "Mohamed3042/mk-editor-demo",
+      "file": "mk-editor-demo.json.gz",
+      "files": 9,
+      "bytes": 71723,
+      "tree_sha": "3a7e3b598dcd9ab14b543d024e899a9b53e41abe"
+    },
+    {
+      "full_name": "Mohamed3042/cake-studio-demo",
+      "file": "cake-studio-demo.json.gz",
+      "files": 3,
+      "bytes": 27336,
+      "tree_sha": "4c6717d7e1d637b44c3e0f4c3ba80c17d0bd833e"
+    },
+    {
+      "full_name": "Mohamed3042/quotation-builder-demo",
+      "file": "quotation-builder-demo.json.gz",
+      "files": 6,
+      "bytes": 65118,
+      "tree_sha": "c5651b0c10bd2d662e300ec11ee0096f87630a1a"
+    },
+    {
+      "full_name": "Mohamed3042/reclaim-demo",
+      "file": "reclaim-demo.json.gz",
+      "files": 10,
+      "bytes": 67546,
+      "tree_sha": "c768b131340ac36685929b2c52e1ff75ae864a39"
+    },
+    {
+      "full_name": "Mohamed3042/enterprise-ai-automation-templates",
+      "file": "enterprise-ai-automation-templates.json.gz",
+      "files": 63,
+      "bytes": 186681,
+      "tree_sha": "9eee7a7df47f6f85552a8b0285ac4bdc534405ae"
+    },
+    {
+      "full_name": "Mohamed3042/prompt-king",
+      "file": "prompt-king.json.gz",
+      "files": 9,
+      "bytes": 166632,
+      "tree_sha": "88cfa3ca6457d1caeaa8905fce56010f13102dcd"
+    },
+    {
+      "full_name": "Mohamed3042/medmac-work",
+      "file": "medmac-work.json.gz",
+      "files": 2,
+      "bytes": 63733,
+      "tree_sha": "909c75ccc13b081f2744785811df2a453566e5a8"
+    },
+    {
+      "full_name": "Mohamed3042/god-mode-portfolio",
+      "file": "god-mode-portfolio.json.gz",
+      "files": 33,
+      "bytes": 148093,
+      "tree_sha": "191101c49a9e94e3da6383d922dcf4c31dd8d9d2"
+    },
+    {
+      "full_name": "Mohamed3042/flagship-disney-media",
+      "file": "flagship-disney-media.json.gz",
+      "files": 2,
+      "bytes": 4896,
+      "tree_sha": "ddda79b84572685050f894b7d691fe76a1b2b0c6"
+    },
+    {
+      "full_name": "Mohamed3042/ai-automation-command-center",
+      "file": "ai-automation-command-center.json.gz",
+      "files": 32,
+      "bytes": 277607,
+      "tree_sha": "6fd6e583f72b1c0e3b91e6ea4c27ae9a9b8052cd"
+    },
+    {
+      "full_name": "Mohamed3042/polyblast-arena",
+      "file": "polyblast-arena.json.gz",
+      "files": 40,
+      "bytes": 285631,
+      "tree_sha": "d800c70fec11b5b9c3804ba37717a4c5a9bb616c"
+    },
+    {
+      "full_name": "Mohamed3042/Flagship-One-Page",
+      "file": "Flagship-One-Page.json.gz",
+      "files": 16,
+      "bytes": 450746,
+      "tree_sha": "fe2f928a68edf9e0560922b49d0a1c89396f388b"
+    }
+  ]
+}

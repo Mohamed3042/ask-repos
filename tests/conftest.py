@@ -16,7 +16,7 @@ from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session, sessionmaker
 
-from ask_repos.config import reset_settings_cache
+from ask_repos.config import Settings, reset_settings_cache
 from ask_repos.db.models import Base
 
 DEFAULT_URL = "postgresql+psycopg://askrepos:askrepos@localhost:5433/askrepos"
@@ -87,6 +87,8 @@ def session(engine: Engine) -> Iterator[Session]:
 @pytest.fixture(autouse=True)
 def clean_settings(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     """Tests never inherit the developer's keys, and never see a stale settings cache."""
+    # A developer's local `.env` is real configuration for the app and noise for the tests.
+    monkeypatch.setitem(Settings.model_config, "env_file", None)
     for name in ("GEMINI_API_KEY", "ASK_REPOS_API_KEY", "ASK_REPOS_WEBHOOK_SECRET", "GITHUB_TOKEN"):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("ASK_REPOS_RERANK", "0")

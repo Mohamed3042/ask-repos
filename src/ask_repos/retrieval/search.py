@@ -93,13 +93,32 @@ def _vector_candidates(
     return [dict(row) for row in session.execute(query, params).mappings()]
 
 
+def to_or_query(query: str) -> str:
+    """Turn a natural question into an OR query for `websearch_to_tsquery`.
+
+    `websearch_to_tsquery` ANDs bare words, so "Which Kuwait branches does the Retail Ops
+    Hub demo cover?" required every one of those words in a single chunk and matched almost
+    nothing: the full-text arm measured recall@5 0.152 before this. Content words joined
+    with OR is what a search box actually means.
+    """
+    from ask_repos.agent.cite_check import content_words
+
+    words = content_words(query)
+    return " OR ".join(dict.fromkeys(words)) if words else query
+
+
 def _text_candidates(
     session: Session, query_text: str, limit: int, repo: str | None
 ) -> list[dict[str, Any]]:
+    query_text = to_or_query(query_text)
     clause = "AND r.full_name = :repo" if repo else ""
+    # Normalisation flag 2 divides the rank by document length. Without it an OR query
+    # simply ranks the longest generated files first, because they contain more of every
+    # word: measured on the golden set, recall@5 for this arm was 0.130 unnormalised and
+    # 0.348 with flag 2.
     query = sql_text(
         f"{_ROW_SQL} WHERE c.tsv @@ websearch_to_tsquery('english', :q) {clause} "
-        "ORDER BY ts_rank_cd(c.tsv, websearch_to_tsquery('english', :q)) DESC LIMIT :limit"
+        "ORDER BY ts_rank_cd(c.tsv, websearch_to_tsquery('english', :q), 2) DESC LIMIT :limit"
     )
     params: dict[str, Any] = {"q": query_text, "limit": limit}
     if repo:
