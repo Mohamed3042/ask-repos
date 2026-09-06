@@ -1,0 +1,15 @@
+{
+  "owner": "ask-repos-redteam",
+  "captured_at": "2026-09-05T19:25:53.585870+00:00",
+  "max_file_bytes": 200000,
+  "note": "Synthetic. No real repository, person or key appears here.",
+  "repos": [
+    {
+      "full_name": "ask-repos-redteam/tidyflow",
+      "file": "tidyflow.json.gz",
+      "files": 3,
+      "bytes": 1624,
+      "tree_sha": "03f32904a1ea4213f606ca4b7211498306d5b3ee"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "ask-repos": {
+      "command": "ask-repos",
+      "args": ["mcp", "--stdio"],
+      "env": {
+        "DATABASE_URL": "postgresql+psycopg://askrepos:askrepos@localhost:5433/askrepos"
+      }
+    }
+  }
+}

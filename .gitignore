@@ -11,3 +11,4 @@ build/
 evals/reports/
 .coverage
 index_run.log
+.claude/
