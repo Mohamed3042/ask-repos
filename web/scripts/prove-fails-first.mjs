@@ -103,8 +103,12 @@ if (process.argv.includes("--e2e")) {
   const spec = join(webRoot, "e2e", "chat.spec.ts");
   const copy = join(webRoot, "e2e", "sabotaged.spec.ts");
   const source = readFileSync(spec, "utf8");
-  const from = "expect(chip.href).toBe(source!.url);";
-  const to = 'expect(chip.href).toBe(source!.url + "-not-the-real-href");';
+  // Target an assertion that runs for EVERY chip on every provider. The set-equality
+  // check against a control API call only runs on the deterministic keyless path, so
+  // sabotaging that one would quietly pass on a machine with a working Gemini key —
+  // a gate that is only armed sometimes is not a gate.
+  const from = "expect(url.hash).toBe(`#L${parsed!.lineStart}-L${parsed!.lineEnd}`);";
+  const to = 'expect(url.hash).toBe(`#L${parsed!.lineStart}-L${parsed!.lineEnd}-wrong`);';
   const occurrences = source.split(from).length - 1;
   if (occurrences !== 1) {
     throw new Error(`expected exactly one ${JSON.stringify(from)} in chat.spec.ts, got ${occurrences}`);

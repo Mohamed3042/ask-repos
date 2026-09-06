@@ -1,65 +1,76 @@
 import { expect, test } from "@playwright/test";
 
-import { API_URL, apiAsk, askInUi, chipsOnPage, type ApiCitation } from "./support";
+import { API_URL, apiAsk, askInUi, chipsOnPage, parseChipCitation } from "./support";
 
 const GOLDEN = "Which Kuwait branches does the Retail Ops Hub demo cover?";
 const UNANSWERABLE = "What is the author's shoe size?";
 
-/** Pull the citations out of the SSE body the browser actually received. */
-function citationsFromStream(body: string): ApiCitation[] {
-  const citations: ApiCitation[] = [];
-  for (const frame of body.split("\n\n")) {
-    if (!frame.includes("event: sentence")) continue;
-    const data = frame
-      .split("\n")
-      .filter((line) => line.startsWith("data:"))
-      .map((line) => line.slice(5).trim())
-      .join("\n");
-    if (!data) continue;
-    const sentence = JSON.parse(data) as { kept: boolean; citations: ApiCitation[] };
-    if (sentence.kept) citations.push(...sentence.citations);
-  }
-  return citations;
-}
-
 test.describe("ask", () => {
   test("a golden question renders sentences whose chips link to the API's citation", async ({
     page,
+    request,
   }) => {
     await page.goto("/");
     await expect(page.getByTestId("answer-empty")).toBeVisible();
 
-    // Compare the chips against the *same run* that produced them. Comparing against a
-    // second `POST /v1/ask` was the first version of this test, and it failed for a
-    // reason that was not a defect: the UI uses provider `auto` (Gemini here) and the
-    // control call used `extractive`, so the two runs legitimately cited different lines.
+    // The route handler's trace id comes off the response *headers*. The body does not:
+    // reading a server-sent-event body after the fact through the debugging protocol
+    // fails with `Network.getResponseBody: No data found for resource` — Chromium does
+    // not retain a streamed body. That version of this test passed locally and failed in
+    // CI twice, which is the worst kind of test.
     const streamed = page.waitForResponse(
       (response) => response.url().includes("/api/ask") && response.status() === 200,
     );
     await askInUi(page, GOLDEN);
-    const response = await streamed;
-    const expectedCitations = citationsFromStream(await response.text());
-    expect(expectedCitations.length, "the golden question must be answerable").toBeGreaterThan(0);
-    expect(response.headers()["x-trace-id"], "the route handler echoes its trace id").toMatch(
+    expect((await streamed).headers()["x-trace-id"], "the handler echoes its trace id").toMatch(
       /^[0-9a-f]{32}$/,
     );
 
     await expect(page.getByTestId("answer-sentences")).toBeVisible();
     const chips = await chipsOnPage(page);
-    expect(chips.length).toBe(expectedCitations.length);
+    expect(chips.length, "the golden question must be answerable").toBeGreaterThan(0);
 
-    const byCitation = new Map(expectedCitations.map((citation) => [citation.citation, citation]));
+    // (1) Always: the link must agree with the citation the chip is *displaying*. This is
+    // the defect class that matters — a chip that says one thing and opens another — and
+    // it holds whatever provider answered.
     for (const chip of chips) {
       expect(chip.citation, "chip carries its citation string").toBeTruthy();
-      const source = byCitation.get(chip.citation!);
-      expect(source, `the stream contained citation ${chip.citation}`).toBeTruthy();
-      expect(chip.href).toBe(source!.url);
-      expect(chip.href).toContain(`/blob/${source!.sha}/`);
-      expect(chip.href).toContain(`#L${source!.line_start}-L${source!.line_end}`);
-      expect(chip.text).toContain(`L${source!.line_start}-L${source!.line_end}`);
+      const parsed = parseChipCitation(chip.citation!);
+      expect(parsed, `chip citation is well formed: ${chip.citation}`).toBeTruthy();
+      const url = new URL(chip.href);
+      expect(url.origin).toBe("https://github.com");
+      expect(decodeURIComponent(url.pathname)).toBe(
+        `/${parsed!.repo}/blob/${url.pathname.split("/")[4]}/${parsed!.path}`,
+      );
+      // The link carries the FULL sha; the chip shows its prefix.
+      expect(url.pathname.split("/")[4]).toMatch(
+        new RegExp(`^${parsed!.shortSha}[0-9a-f]*$`, "i"),
+      );
+      expect(url.hash).toBe(`#L${parsed!.lineStart}-L${parsed!.lineEnd}`);
+      expect(chip.text).toContain(`L${parsed!.lineStart}-L${parsed!.lineEnd}`);
     }
 
-    await expect(page.getByTestId("provider")).toBeVisible();
+    // (2) When the answer came from the deterministic keyless path — which is what CI
+    // runs — the chips must be exactly the citations the API returns for the same
+    // question. Gemini is not reproducible run to run, so asserting set equality against
+    // it would fail for a reason that is not a defect.
+    const provider = (await page.getByTestId("provider").textContent())?.trim() ?? "";
+    expect(provider, "the answer says which provider produced it").not.toBe("");
+    if (provider.startsWith("extractive")) {
+      const control = await apiAsk(request, GOLDEN, "extractive");
+      const byCitation = new Map(
+        control.sentences
+          .filter((sentence) => sentence.kept)
+          .flatMap((sentence) => sentence.citations)
+          .map((citation) => [citation.citation, citation]),
+      );
+      for (const chip of chips) {
+        const source = byCitation.get(chip.citation!);
+        expect(source, `the API returned citation ${chip.citation}`).toBeTruthy();
+        expect(chip.href).toBe(source!.url);
+      }
+      expect(new Set(chips.map((chip) => chip.citation))).toEqual(new Set(byCitation.keys()));
+    }
   });
 
   test("the deterministic extractive answer is reproducible through the API", async ({

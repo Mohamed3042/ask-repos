@@ -57,6 +57,20 @@ export async function askInUi(page: Page, question: string) {
   return panel;
 }
 
+/** Parse `owner/repo/path#Lstart-Lend@shortsha` — the string the chip displays. */
+export function parseChipCitation(raw: string) {
+  const match = /^([^/\s]+)\/([^/\s]+)\/(.+)#L(\d+)-L(\d+)@([0-9a-f]+)$/i.exec(raw.trim());
+  if (!match) return null;
+  const [, owner, name, path, start, end, shortSha] = match;
+  return {
+    repo: `${owner}/${name}`,
+    path,
+    lineStart: Number(start),
+    lineEnd: Number(end),
+    shortSha,
+  };
+}
+
 /** Every citation chip currently on the page, as `{ citation, href }`. */
 export async function chipsOnPage(page: Page) {
   return await page.locator("a.chip").evaluateAll((nodes) =>
