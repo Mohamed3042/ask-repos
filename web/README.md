@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ask-repos web
 
-## Getting Started
-
-First, run the development server:
+The interface for [`ask-repos`](../README.md): a streaming chat whose citation chips open
+the exact GitHub lines, a corpus page, and an evals page. Next.js 15 App Router, React 19,
+TypeScript strict, and no UI framework — see
+[ADR 0006](../docs/adr/0006-nextjs-app-router.md).
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm ci
+cp .env.example .env.local        # defaults already point at http://localhost:8080
+npm run dev                       # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The API has to be running: `docker compose up -d db api` from the repository root.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| | |
+|---|---|
+| `npm run dev` / `build` / `start` | the usual |
+| `npm run lint` · `typecheck` | ESLint, `tsc --noEmit` |
+| `npm test` | vitest — the citation parser and the trace context |
+| `npm run e2e` | Playwright against a **real** API; `E2E_BASE_URL` points it at a deployed one |
+| `npm run prove:gates` | sabotages `blobUrl` on a copy and requires the suite to go red, then green |
+| `npm run prove:gates:e2e` | the same for the browser assertion |
+| `npm run sync:evals` / `check:evals` | copy the eval report CI gates on into `data/`, or verify the committed copy still matches |
+| `npm run shots` | regenerate every screenshot in the documentation (`SHOTS=1`) |
+| `npm run demo:record` + `demo:gif` | re-record `docs/proof/demo.gif` |
 
-## Learn More
+## Where the boundary is
 
-To learn more about Next.js, take a look at the following resources:
+`lib/api.ts` is the only module that knows `ASK_REPOS_API_URL` and `ASK_REPOS_API_KEY`, and
+its first line is `import "server-only"` — importing it from a client component is a build
+error. Everything the browser calls is a route handler under `app/api/`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## The lock file is generated on Linux
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+`package-lock.json` must be regenerated in a Linux container, not on Windows. npm records
+only the optional platform packages it resolved, so a lock produced on Windows is missing
+`@emnapi/core` and `@emnapi/runtime` (Linux-only optional dependencies of `sharp`, which
+Next pulls in), and `npm ci` on an Ubuntu runner then fails with
+`can only install packages when your package.json and package-lock.json ... are in sync`.
 
-## Deploy on Vercel
+```bash
+docker run --rm -v "$PWD:/app" -w /app node:22-slim npm install --package-lock-only
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+On Git Bash prefix that with `MSYS_NO_PATHCONV=1`, or `/app` is rewritten to
+`C:/Program Files/Git/app`.

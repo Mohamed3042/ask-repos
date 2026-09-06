@@ -48,7 +48,7 @@ def probe(url: str) -> dict[str, Any]:
             "ms": round((time.perf_counter() - started) * 1000),
             "error": None,
         }
-    except Exception as error:  # noqa: BLE001 - a failure to reach it is the measurement
+    except Exception as error:
         return {
             "status": None,
             "ms": round((time.perf_counter() - started) * 1000),

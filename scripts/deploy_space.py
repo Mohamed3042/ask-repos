@@ -17,6 +17,7 @@ never printed.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import sys
 import time
@@ -97,10 +98,8 @@ def report(base: str, corpus: dict) -> None:
             print(f"POST /v1/index      {response.status}  <-- expected 403")
     except urllib.error.HTTPError as error:
         detail = ""
-        try:
+        with contextlib.suppress(Exception):
             detail = json.loads(error.read()).get("detail", "")[:80]
-        except Exception:
-            pass
         print(f"POST /v1/index      {error.code}  {detail}")
 
 
@@ -111,7 +110,7 @@ def upload(space_id: str) -> None:
     api = HfApi()
     try:
         who = api.whoami()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         raise SystemExit(
             "no Hugging Face credentials. Run `hf auth login` with a WRITE token "
             f"(account Medo4334), or set HF_TOKEN. ({type(exc).__name__})"
