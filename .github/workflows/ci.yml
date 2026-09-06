@@ -87,7 +87,7 @@ jobs:
       - name: Run the eval suite and gate
         # Citation validity is an absolute: a single unresolvable citation fails the build.
         # The recall floor is the measured baseline recorded in docs/retrieval.md.
-        run: ask-repos evals run --min-citation-validity 1.0 --min-recall5 0.80
+        run: ask-repos evals run --min-citation-validity 1.0 --min-recall5 0.85
       - name: Upload the eval report
         if: always()
         uses: actions/upload-artifact@v4
@@ -148,7 +148,7 @@ jobs:
       - name: Evals through the Gemini provider, with the optional judge
         run: >-
           ask-repos evals run --provider gemini --judge
-          --min-citation-validity 1.0 --min-recall5 0.80
+          --min-citation-validity 1.0 --min-recall5 0.85
           --report-dir evals/reports-live
       - name: Upload the live report
         if: always()

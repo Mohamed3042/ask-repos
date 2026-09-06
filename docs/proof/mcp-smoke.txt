@@ -1,0 +1,22 @@
+tools: answer_with_citations, get_file_span, list_repos, search_corpus
+corpus: 16 repos, 6018 chunks
+embeddings: BAAI/bge-small-en-v1.5   generation: extractive (keyless)
+
+Q: Which Kuwait branches does the Retail Ops Hub demo cover?
+refused: False
+A: # Retail Ops Hub — Pet Point-style Kuwait demo > **Independent technical demo for a job application. This repository is not an official Pet Point product, is not endorsed by Pet Point, and does not connect to Pet Point systems.** Every order, anonymous customer reference, booking, alert and integration response is … ### Omnichannel order and inventory control <table> <tr> <td width="50%"><img src=
+  -> Mohamed3042/petpoint-ops-hub/README.md#L1-L8@5a44442
+     https://github.com/Mohamed3042/petpoint-ops-hub/blob/5a444423c1ac1254f2ccff0abe48ca504ab94e2e/README.md#L1-L8
+  -> Mohamed3042/petpoint-ops-hub/README.md#L40-L50@5a44442
+     https://github.com/Mohamed3042/petpoint-ops-hub/blob/5a444423c1ac1254f2ccff0abe48ca504ab94e2e/README.md#L40-L50
+  -> Mohamed3042/petpoint-ops-hub/README.md#L199-L202@5a44442
+     https://github.com/Mohamed3042/petpoint-ops-hub/blob/5a444423c1ac1254f2ccff0abe48ca504ab94e2e/README.md#L199-L202
+    get_file_span returns the stored lines behind that citation:
+        # Retail Ops Hub — Pet Point-style Kuwait demo
+        
+        > **Independent technical demo for a job application. This repository is not an official Pet Point product, is
+        
+
+Q: Which certifications does the author hold?
+refused: True
+A: Not in the corpus. I could not anchor an answer to indexed file lines, so I am not answering.

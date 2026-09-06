@@ -15,7 +15,7 @@ class Settings(BaseSettings):
 
     # --- storage -------------------------------------------------------------
     database_url: str = Field(
-        default="postgresql+psycopg://askrepos:askrepos@localhost:5432/askrepos",
+        default="postgresql+psycopg://askrepos:askrepos@localhost:5433/askrepos",
         validation_alias="DATABASE_URL",
     )
 

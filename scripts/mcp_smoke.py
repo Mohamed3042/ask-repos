@@ -17,7 +17,8 @@ from typing import Any
 
 from mcp import Client, StdioServerParameters
 
-QUESTION = "What does the ask-repos cite-check node do when a citation cannot be resolved?"
+ANSWERABLE = "Which Kuwait branches does the Retail Ops Hub demo cover?"
+UNANSWERABLE = "Which certifications does the author hold?"
 
 
 def unwrap(result: Any) -> dict[str, Any]:
@@ -40,32 +41,34 @@ async def main() -> int:
         print(f"corpus: {repos['repo_count']} repos, {repos['chunk_count']} chunks")
         print(f"embeddings: {repos['embed_model']}   generation: {repos['generation']}")
 
-        answer = unwrap(await client.call_tool("answer_with_citations", {"question": QUESTION}))
-        print()
-        print("Q:", QUESTION)
-        print("refused:", answer["refused"])
-        print("A:", (answer["answer"] or "")[:600])
-        for citation in answer["citations"][:4]:
-            print("  ↳", citation["citation"])
-            print("    ", citation["url"])
-
-        if answer["citations"]:
-            first = answer["citations"][0]
-            span = unwrap(
-                await client.call_tool(
-                    "get_file_span",
-                    {
-                        "repo": first["repo"],
-                        "path": first["path"],
-                        "line_start": first["line_start"],
-                        "line_end": first["line_end"],
-                    },
-                )
+        for question in (ANSWERABLE, UNANSWERABLE):
+            answer = unwrap(
+                await client.call_tool("answer_with_citations", {"question": question})
             )
             print()
-            print("get_file_span returned the stored lines behind that citation:")
-            for line in span["text"].splitlines()[:6]:
-                print("   ", line)
+            print("Q:", question)
+            print("refused:", answer["refused"])
+            print("A:", (answer["answer"] or "")[:400])
+            for citation in answer["citations"][:3]:
+                print("  ->", citation["citation"])
+                print("    ", citation["url"])
+
+            if answer["citations"]:
+                first = answer["citations"][0]
+                span = unwrap(
+                    await client.call_tool(
+                        "get_file_span",
+                        {
+                            "repo": first["repo"],
+                            "path": first["path"],
+                            "line_start": first["line_start"],
+                            "line_end": first["line_end"],
+                        },
+                    )
+                )
+                print("    get_file_span returns the stored lines behind that citation:")
+                for line in span["text"].splitlines()[:4]:
+                    print("       ", line[:110])
     return 0
 
 
