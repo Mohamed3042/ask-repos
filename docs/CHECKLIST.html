@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ask-repos — publish the API</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  :root {
+    --bg: #EEF2F5;
+    --surface: #FFFFFF;
+    --ink: #17202A;
+    --muted: #64707C;
+    --line: #D3DAE0;
+    --accent: #E8641B;
+    --accent-ink: #FFFFFF;
+    --done: #2F8F5B;
+    --done-bg: #E4F3EA;
+    --now-bg: #FFF3EA;
+    --code-bg: #E6EBEF;
+    --warn: #9A6511;
+    --warn-bg: #FFF6DF;
+    --shadow: 0 1px 2px rgba(23, 32, 42, 0.06), 0 8px 24px rgba(23, 32, 42, 0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F161D;
+      --surface: #182229;
+      --ink: #E9EEF3;
+      --muted: #97A3AE;
+      --line: #2A3641;
+      --accent: #FF8A3D;
+      --accent-ink: #1A1008;
+      --done: #5FC38A;
+      --done-bg: #173226;
+      --now-bg: #3A2314;
+      --code-bg: #0B1116;
+      --warn: #E2B04A;
+      --warn-bg: #2E2410;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F161D;
+    --surface: #182229;
+    --ink: #E9EEF3;
+    --muted: #97A3AE;
+    --line: #2A3641;
+    --accent: #FF8A3D;
+    --accent-ink: #1A1008;
+    --done: #5FC38A;
+    --done-bg: #173226;
+    --now-bg: #3A2314;
+    --code-bg: #0B1116;
+    --warn: #E2B04A;
+    --warn-bg: #2E2410;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Atkinson Hyperlegible", "Helvetica Neue", Arial, sans-serif;
+    font-size: 17px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 0 20px 80px; }
+
+  /* sticky progress */
+  .top {
+    position: sticky; top: 0; z-index: 5;
+    background: var(--bg);
+    padding: 18px 0 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .top-row { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+  h1 {
+    font-family: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+    font-weight: 800; font-size: 26px; letter-spacing: -0.01em;
+    margin: 0; text-wrap: balance;
+  }
+  .count {
+    font-family: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+    font-weight: 700; font-size: 22px; font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .count small { font-size: 14px; color: var(--muted); font-weight: 500; margin-left: 4px; }
+  .bar { height: 10px; border-radius: 999px; background: var(--line); margin-top: 12px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 0; background: var(--done); border-radius: 999px; transition: width 320ms ease; }
+  .next { margin-top: 10px; display: flex; align-items: center; gap: 10px; font-size: 16px; min-height: 26px; }
+  .next b { color: var(--accent); font-weight: 700; letter-spacing: 0.06em; font-size: 12px; text-transform: uppercase; }
+
+  /* phases */
+  .phase { margin-top: 34px; }
+  .phase-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; }
+  .phase-head h2 {
+    font-family: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+    font-weight: 700; font-size: 20px; margin: 0; letter-spacing: -0.005em;
+  }
+  .phase-head span { color: var(--muted); font-size: 14px; }
+  .phase-note { color: var(--muted); font-size: 14px; margin: -4px 0 10px; }
+
+  ol.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .step {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+  }
+  .step label { display: grid; grid-template-columns: 30px 1fr; gap: 14px; padding: 14px 16px; cursor: pointer; align-items: start; }
+  .step input[type="checkbox"] {
+    width: 26px; height: 26px; margin: 2px 0 0; accent-color: var(--done); cursor: pointer; flex: none;
+  }
+  .step input[type="checkbox"]:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+  .body { display: grid; gap: 4px; min-width: 0; }
+  .title { font-weight: 700; font-size: 18px; line-height: 1.3; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .where { color: var(--muted); font-size: 15px; }
+  .where strong { color: var(--ink); font-weight: 700; }
+  .path {
+    display: inline-block; max-width: 100%; overflow-x: auto; white-space: nowrap; vertical-align: bottom;
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px;
+    background: var(--code-bg); padding: 3px 8px; border-radius: 6px; color: var(--ink);
+  }
+  .asks { margin: 4px 0 0; padding-left: 18px; color: var(--ink); font-size: 15px; display: grid; gap: 2px; }
+  .warn { color: var(--warn); background: var(--warn-bg); border-radius: 6px; padding: 4px 8px; font-size: 14px; display: inline-block; }
+
+  /* states */
+  .pill {
+    display: none; font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+    background: var(--accent); color: var(--accent-ink); padding: 3px 8px; border-radius: 999px; line-height: 1.2;
+  }
+  .step.is-now { border-color: var(--accent); background: var(--now-bg); }
+  .step.is-now .pill { display: inline-block; }
+  .step.is-done { background: var(--done-bg); border-color: transparent; box-shadow: none; }
+  .step.is-done .title { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 2px; }
+  .step.is-done .where, .step.is-done .asks { color: var(--muted); }
+  .step.locked label { cursor: default; }
+  .step.locked input { cursor: default; }
+
+  .foot { margin-top: 40px; display: flex; gap: 18px; align-items: center; color: var(--muted); font-size: 14px; flex-wrap: wrap; }
+  .foot button {
+    font: inherit; color: var(--muted); background: none; border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; cursor: pointer;
+  }
+  .foot button:hover, .foot button:focus-visible { color: var(--ink); border-color: var(--ink); outline: none; }
+  .alldone { display: none; margin-top: 28px; padding: 18px 20px; border-radius: 12px; background: var(--done-bg); color: var(--ink); font-weight: 700; font-size: 18px; }
+  .alldone.show { display: block; }
+
+  @media (prefers-reduced-motion: reduce) { .bar > i { transition: none; } }
+  @media (max-width: 480px) {
+    body { font-size: 16px; }
+    .title { font-size: 17px; }
+    .step label { padding: 12px 12px; gap: 10px; grid-template-columns: 26px 1fr; }
+    .step, .step label, .body, .title, .where { min-width: 0; max-width: 100%; }
+    .step { overflow: hidden; }
+    .where { display: block; overflow-wrap: anywhere; }
+    .path { display: block; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="top-row">
+      <h1>ask-repos — publish the API</h1>
+      <div class="count"><span id="n-done">0</span><small>/ <span id="n-total">0</span> done</small></div>
+    </div>
+    <div class="bar"><i id="bar"></i></div>
+    <div class="next"><b>Next</b> <span id="next-title">—</span></div>
+  </header>
+
+  <section class="phase">
+    <div class="phase-head"><h2>Done — v0.2.0 is live</h2><span>today</span></div>
+    <ol class="steps">
+      <li class="step locked"><label><input type="checkbox" checked disabled data-id="d1"><span class="body">
+        <span class="title">Interface live on Netlify</span>
+        <span class="where"><span class="path">https://ask-repos-live.netlify.app</span> — all three pages <strong>200</strong></span>
+      </span></label></li>
+      <li class="step locked"><label><input type="checkbox" checked disabled data-id="d2"><span class="body">
+        <span class="title">Merged, tagged v0.2.0, release published</span>
+        <span class="where">All five CI jobs green on <span class="path">main</span></span>
+      </span></label></li>
+      <li class="step locked"><label><input type="checkbox" checked disabled data-id="d3"><span class="body">
+        <span class="title">API Space image built and proven locally</span>
+        <span class="where">14 repos · 1,625 chunks baked in · every write refused <strong>403</strong></span>
+      </span></label></li>
+      <li class="step locked"><label><input type="checkbox" checked disabled data-id="d4"><span class="body">
+        <span class="title">Netlify already points at the Space URL</span>
+        <span class="where">No redeploy needed once the Space exists</span>
+      </span></label></li>
+    </ol>
+  </section>
+
+  <section class="phase">
+    <div class="phase-head"><h2>Your step</h2><span>3 minutes</span></div>
+    <ol class="steps">
+      <li class="step"><label><input type="checkbox" data-id="s1"><span class="body">
+        <span class="title">Make a Hugging Face write token</span>
+        <span class="where"><span class="path">huggingface.co/settings/tokens</span> → New token → type <strong>Write</strong> (account Medo4334)</span>
+      </span></label></li>
+      <li class="step"><label><input type="checkbox" data-id="s2"><span class="body">
+        <span class="title">Paste it into the CLI</span>
+        <span class="where"><span class="path">C:\Users\GAMING\Downloads\ask-repos\.venv\Scripts\hf.exe auth login</span></span>
+      </span></label></li>
+      <li class="step"><label><input type="checkbox" data-id="s3"><span class="body">
+        <span class="title">Run the deploy script</span>
+        <span class="where"><span class="path">python C:\Users\GAMING\Downloads\ask-repos\scripts\deploy_space.py</span> — it uploads, waits, then prints the live numbers</span>
+      </span></label></li>
+      <li class="step"><label><input type="checkbox" data-id="s4"><span class="body">
+        <span class="title">Open the site and ask it something</span>
+        <span class="where"><span class="path">https://ask-repos-live.netlify.app</span> — the corpus error is gone once the Space answers</span>
+      </span></label></li>
+    </ol>
+  </section>
+
+  <section class="phase">
+    <div class="phase-head"><h2>Optional</h2><span>any time</span></div>
+    <ol class="steps">
+      <li class="step"><label><input type="checkbox" data-id="o1"><span class="body">
+        <span class="title">Let CI redeploy the Space for you</span>
+        <span class="where"><span class="path">gh secret set HF_TOKEN -R Mohamed3042/ask-repos</span> — paste the same token. <span class="warn">Same token, never printed</span></span>
+      </span></label></li>
+      <li class="step"><label><input type="checkbox" data-id="o2"><span class="body">
+        <span class="title">Give the Space a Gemini key</span>
+        <span class="where">Space → Settings → Secrets → <strong>GEMINI_API_KEY</strong>. Without it answers are quoted lines, not prose.</span>
+      </span></label></li>
+      <li class="step"><label><input type="checkbox" data-id="o3"><span class="body">
+        <span class="title">Confirm the seven FACTS lines</span>
+        <span class="where">The surfaces session shows them to you one by one</span>
+      </span></label></li>
+    </ol>
+  </section>
+
+<div class="alldone" id="alldone">All ticked. Both halves of ask-repos are live.</div>
+
+  <div class="foot">
+    <span>Ticks save on this browser.</span>
+    <button type="button" id="reset">Reset ticks</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  var KEY = 'ask-repos-v020-space-v1';
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { saved = {}; }
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('.step input[type="checkbox"]'));
+  var steps = boxes.map(function (b) { return b.closest('.step'); });
+
+  boxes.forEach(function (b) {
+    if (!b.disabled && saved[b.dataset.id]) b.checked = true;
+    b.addEventListener('change', function () {
+      saved[b.dataset.id] = b.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+      render();
+    });
+  });
+
+  function render() {
+    var done = 0, nextSet = false, nextTitle = '';
+    boxes.forEach(function (b, i) {
+      var li = steps[i];
+      li.classList.toggle('is-done', b.checked);
+      var isNow = false;
+      if (!b.checked && !b.disabled && !nextSet) { isNow = true; nextSet = true; nextTitle = li.querySelector('.title').childNodes[0].textContent.trim(); }
+      li.classList.toggle('is-now', isNow);
+      if (b.checked) done++;
+    });
+    document.getElementById('n-done').textContent = done;
+    document.getElementById('n-total').textContent = boxes.length;
+    document.getElementById('bar').style.width = Math.round(done / boxes.length * 100) + '%';
+    document.getElementById('next-title').textContent = nextSet ? nextTitle : 'nothing — all done';
+    document.getElementById('alldone').classList.toggle('show', !nextSet);
+  }
+
+  document.getElementById('reset').addEventListener('click', function () {
+    saved = {};
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    boxes.forEach(function (b) { if (!b.disabled) b.checked = false; });
+    render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
