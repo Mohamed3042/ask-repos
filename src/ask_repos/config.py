@@ -34,6 +34,10 @@ class Settings(BaseSettings):
         default="Xenova/ms-marco-MiniLM-L-6-v2", validation_alias="ASK_REPOS_RERANK_MODEL"
     )
     rerank_enabled: bool = Field(default=True, validation_alias="ASK_REPOS_RERANK")
+    # Pairs scored per forward pass. The score of a pair does not depend on its batch, so this
+    # is purely a memory knob: MiniLM's attention on a batch of 64 padded to 512 tokens is
+    # ~800 MB of activations, which killed the 512 MB hosted demo mid-answer (2026-09-06).
+    rerank_batch_size: int = Field(default=8, validation_alias="ASK_REPOS_RERANK_BATCH")
     model_cache_dir: str | None = Field(default=None, validation_alias="ASK_REPOS_MODEL_CACHE")
 
     # --- generation (optional) ----------------------------------------------

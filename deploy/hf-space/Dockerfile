@@ -91,14 +91,20 @@ ENV ASK_REPOS_READONLY=1 \
     PORT=7860
 
 # Memory. The hosted instance has 512 MB for PostgreSQL, the embedding model, the reranker
-# and the Python process together. Measured 2026-09-06 on Render Free with the stock
-# settings: boots, answers two questions, then the kernel kills the container. Two levers,
-# neither of which changes what the demo serves:
+# and the Python process together. Measured 2026-09-06 on Render Free: the container boots,
+# answers a question, and is killed by the kernel about fifteen seconds later with health
+# checks still green and no traceback; the host's own memory graph stays at ~130 MB between
+# answers. The spike is the reranker scoring the whole shortlist in one batch of 64 pairs -
+# MiniLM's attention on 64 x 512 tokens is ~800 MB of activations. Trimming PostgreSQL alone
+# was measured NOT to be enough. Three settings, none of which changes what the demo serves:
+#   - ASK_REPOS_RERANK_BATCH scores eight pairs per forward pass (a pair's score does not
+#     depend on its batch);
 #   - PostgreSQL is a read-only 1.6 MB corpus here, so shared_buffers, worker processes,
-#     autovacuum and parallel query are all set to the minimum;
-#   - MALLOC_ARENA_MAX stops glibc from keeping one 64 MB arena per thread alive for the
+#     autovacuum and parallel query are set to the minimum;
+#   - MALLOC_ARENA_MAX stops glibc from keeping one arena per thread alive for the
 #     onnxruntime and uvicorn thread pools.
-ENV ASK_REPOS_PG_OPTIONS="-c shared_buffers=16MB -c max_connections=20 -c work_mem=1MB -c maintenance_work_mem=8MB -c autovacuum=off -c max_parallel_workers=0 -c max_worker_processes=2 -c wal_buffers=1MB -c effective_cache_size=64MB -c synchronous_commit=off -c huge_pages=off" \
+ENV ASK_REPOS_RERANK_BATCH=8 \
+    ASK_REPOS_PG_OPTIONS="-c shared_buffers=16MB -c max_connections=20 -c work_mem=1MB -c maintenance_work_mem=8MB -c autovacuum=off -c max_parallel_workers=0 -c max_worker_processes=2 -c wal_buffers=1MB -c effective_cache_size=64MB -c synchronous_commit=off -c huge_pages=off" \
     MALLOC_ARENA_MAX=2
 
 EXPOSE 7860

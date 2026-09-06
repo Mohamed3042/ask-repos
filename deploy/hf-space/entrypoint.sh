@@ -15,9 +15,9 @@ mkdir -p "$SOCKET_DIR"
 # from the WAL, which is what we want, and is why the log is left where it can be read.
 #
 # ASK_REPOS_PG_OPTIONS carries extra `-c name=value` settings. The hosted demo uses it to
-# keep PostgreSQL small: the container shares 512 MB with two ONNX models, and the stock
-# 128 MB shared_buffers plus a dozen worker processes was the difference between answering
-# and being killed by the kernel after the second question (measured 2026-09-06 on Render).
+# keep PostgreSQL small, because the container shares 512 MB with two ONNX models. (The
+# memory kill measured on 2026-09-06 was the reranker's batch size, fixed in the image's
+# environment; this trim is the smaller of the two levers and was not enough on its own.)
 pg_ctl -D "$PGDATA" \
   -o "-c listen_addresses='' -c unix_socket_directories=$SOCKET_DIR ${ASK_REPOS_PG_OPTIONS:-}" \
   -l /tmp/postgres.log -w start

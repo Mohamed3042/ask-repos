@@ -88,10 +88,17 @@ class HashEmbedder:
 class Reranker:
     """Local cross-encoder. Scores (query, passage) pairs; higher is better."""
 
-    def __init__(self, model_name: str | None = None, cache_dir: str | None = None) -> None:
+    def __init__(
+        self,
+        model_name: str | None = None,
+        cache_dir: str | None = None,
+        batch_size: int | None = None,
+    ) -> None:
         settings = get_settings()
         self.name = model_name or settings.rerank_model
         self._cache_dir = cache_dir or settings.model_cache_dir
+        # Memory, not quality: a pair's score is the same whichever batch it lands in.
+        self.batch_size = max(1, batch_size or settings.rerank_batch_size)
         self._model = None
         self._lock = threading.Lock()
 
@@ -107,7 +114,8 @@ class Reranker:
     def score(self, query: str, passages: Sequence[str]) -> list[float]:
         if not passages:
             return []
-        return [float(score) for score in self._ensure().rerank(query, list(passages))]
+        scores = self._ensure().rerank(query, list(passages), batch_size=self.batch_size)
+        return [float(score) for score in scores]
 
 
 _embedder: Embedder | None = None
