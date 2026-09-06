@@ -47,6 +47,16 @@ jobs:
           node-version: "22"
           cache: npm
           cache-dependency-path: web/package-lock.json
+      # `netlify deploy --build` runs the build command in a bare checkout; it does not
+      # install dependencies the way Netlify's own build servers do. Without this the
+      # deploy fails with `sh: 1: next: not found` (it passed locally only because
+      # web/node_modules already existed).
+      - name: Install the UI's dependencies
+        if: steps.creds.outputs.ok == 'true'
+        working-directory: web
+        run: |
+          node scripts/check-lock.mjs
+          npm ci --no-audit --no-fund
       - name: Deploy
         if: steps.creds.outputs.ok == 'true'
         run: npx --yes netlify-cli@23 deploy --build --prod
