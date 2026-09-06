@@ -90,6 +90,17 @@ ENV ASK_REPOS_READONLY=1 \
     ASK_REPOS_CORS_ORIGINS="https://mohamed-mahmoud-kuwait.netlify.app,https://mohamed3042.github.io" \
     PORT=7860
 
+# Memory. The hosted instance has 512 MB for PostgreSQL, the embedding model, the reranker
+# and the Python process together. Measured 2026-09-06 on Render Free with the stock
+# settings: boots, answers two questions, then the kernel kills the container. Two levers,
+# neither of which changes what the demo serves:
+#   - PostgreSQL is a read-only 1.6 MB corpus here, so shared_buffers, worker processes,
+#     autovacuum and parallel query are all set to the minimum;
+#   - MALLOC_ARENA_MAX stops glibc from keeping one 64 MB arena per thread alive for the
+#     onnxruntime and uvicorn thread pools.
+ENV ASK_REPOS_PG_OPTIONS="-c shared_buffers=16MB -c max_connections=20 -c work_mem=1MB -c maintenance_work_mem=8MB -c autovacuum=off -c max_parallel_workers=0 -c max_worker_processes=2 -c wal_buffers=1MB -c effective_cache_size=64MB -c synchronous_commit=off -c huge_pages=off" \
+    MALLOC_ARENA_MAX=2
+
 EXPOSE 7860
 
 HEALTHCHECK --interval=20s --timeout=5s --start-period=40s --retries=5 \
