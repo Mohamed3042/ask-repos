@@ -1,0 +1,14 @@
+# The Space build only needs the Dockerfile, its entrypoint and the corpus snapshot.
+# Everything else lives in the base image the Dockerfile starts FROM.
+.git
+.github
+web
+docs
+src
+tests
+migrations
+scripts
+changelog
+evals/reports
+evals/reports-ci
+evals/injection

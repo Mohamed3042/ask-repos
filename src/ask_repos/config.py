@@ -50,8 +50,29 @@ class Settings(BaseSettings):
     cors_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=list, validation_alias="ASK_REPOS_CORS_ORIGINS"
     )
+    # --- hosted demo ---------------------------------------------------------
+    # A read-only deployment answers and searches, and refuses everything that writes:
+    # POST /v1/index, the push webhook, and approving an agent-requested re-index. The
+    # interrupt itself still fires, because the approval gate is the thing worth showing.
+    readonly: bool = Field(default=False, validation_alias="ASK_REPOS_READONLY")
+    # Fixed-window requests per minute per client for the answer and search routes.
+    # 0 disables the limiter (the default, for local and CI use).
+    rate_limit_per_minute: int = Field(
+        default=0, validation_alias="ASK_REPOS_RATE_LIMIT_PER_MINUTE"
+    )
+    # One sentence the UI shows in its demo banner, e.g. who the corpus belongs to.
+    demo_note: str | None = Field(default=None, validation_alias="ASK_REPOS_DEMO_NOTE")
+
     otel_exporter: str = Field(default="none", validation_alias="ASK_REPOS_OTEL_EXPORTER")
     otel_endpoint: str | None = Field(default=None, validation_alias="OTEL_EXPORTER_OTLP_ENDPOINT")
+
+    @field_validator("demo_note", mode="before")
+    @classmethod
+    def _blank_is_absent(cls, value: object) -> object:
+        # Compose passes "" for a variable nobody set. An empty banner note is not a note.
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
 
     @field_validator("cors_origins", mode="before")
     @classmethod

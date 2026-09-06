@@ -36,8 +36,14 @@ services:
       ASK_REPOS_WEBHOOK_SECRET: ${ASK_REPOS_WEBHOOK_SECRET:-}
       ASK_REPOS_CORS_ORIGINS: ${ASK_REPOS_CORS_ORIGINS:-}
       ASK_REPOS_OTEL_EXPORTER: ${ASK_REPOS_OTEL_EXPORTER:-none}
+      ASK_REPOS_READONLY: ${ASK_REPOS_READONLY:-0}
+      ASK_REPOS_RATE_LIMIT_PER_MINUTE: ${ASK_REPOS_RATE_LIMIT_PER_MINUTE:-0}
+      ASK_REPOS_DEMO_NOTE: ${ASK_REPOS_DEMO_NOTE:-}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
     ports:
-      - "8080:8080"
+      # Host port is parameterised: 4173-4177 and a few others are already taken on some
+      # machines, and a container published onto an occupied port answers "empty reply".
+      - "${ASK_REPOS_API_PORT:-8080}:8080"
     volumes:
       - models:/models
     healthcheck:
@@ -46,6 +52,25 @@ services:
       timeout: 5s
       retries: 30
       start_period: 120s
+
+  # -- the tracing profile ----------------------------------------------------
+  # `docker compose --profile tracing up` adds Jaeger and points the API at it. The UI
+  # (web/, run with OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318) exports to the same
+  # collector, so one trace contains the Next.js route handler and the FastAPI request it
+  # made - which is the whole point of propagating `traceparent`.
+  jaeger:
+    profiles: ["tracing"]
+    image: jaegertracing/all-in-one:1.65.0
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "${JAEGER_UI_PORT:-16686}:16686"   # the UI
+      - "${JAEGER_OTLP_PORT:-4318}:4318"   # OTLP/HTTP, what both services export to
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:16686/"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
 volumes:
   pgdata:

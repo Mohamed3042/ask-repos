@@ -1,0 +1,25 @@
+# Netlify hosts the user interface; the API lives in a Hugging Face Docker Space.
+#
+# The browser never talks to the API directly: every request goes to a Next.js route
+# handler under /api/*, which calls out from the server with ASK_REPOS_API_URL and, if one
+# is configured, ASK_REPOS_API_KEY. Those variables are set on the site, never committed.
+
+[build]
+  base = "web"
+  command = "npm run build"
+  publish = "web/.next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NPM_FLAGS = "--no-audit --no-fund"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "DENY"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"

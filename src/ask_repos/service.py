@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from ask_repos import __version__
 from ask_repos.config import get_settings
-from ask_repos.db.models import Chunk, File, IndexRun, Repo
+from ask_repos.db.models import Chunk, File, IndexRun, Repo, WebhookDelivery
 
 
 def corpus_summary(session: Session) -> dict[str, Any]:
@@ -44,8 +44,31 @@ def corpus_summary(session: Session) -> dict[str, Any]:
         for repo in repos
     ]
     last_run = session.scalars(select(IndexRun).order_by(IndexRun.id.desc()).limit(1)).first()
+    deliveries = int(session.scalar(select(func.count(WebhookDelivery.id))) or 0)
+    last_delivery = session.scalars(
+        select(WebhookDelivery).order_by(WebhookDelivery.id.desc()).limit(1)
+    ).first()
     return {
         "version": __version__,
+        # A read-only deployment says so in its own summary, so a page that renders this
+        # never has to guess why its re-index button was refused.
+        "readonly": settings.readonly,
+        "rate_limit_per_minute": settings.rate_limit_per_minute,
+        "demo_note": settings.demo_note,
+        "owner": settings.default_owner,
+        "webhook": {
+            # "not configured" is a state of its own: it is not a failed webhook, and it is
+            # not a healthy one. RL 003 - unknown is not zero.
+            "configured": bool(settings.webhook_secret),
+            "enabled": bool(settings.webhook_secret) and not settings.readonly,
+            "deliveries": deliveries,
+            "last_delivery_at": (
+                last_delivery.received_at.isoformat()
+                if last_delivery and last_delivery.received_at
+                else None
+            ),
+            "last_repo": last_delivery.repo_full_name if last_delivery else None,
+        },
         "repo_count": len(rows),
         "file_count": sum(row["files"] for row in rows),
         "chunk_count": sum(row["chunks"] for row in rows),

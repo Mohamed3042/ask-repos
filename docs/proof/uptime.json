@@ -1,0 +1,42 @@
+{
+  "targets": {
+    "api": "https://medo4334-ask-repos.hf.space/health",
+    "web": "https://ask-repos-live.netlify.app/"
+  },
+  "samples": [
+    {
+      "at": "2026-09-06T13:32:43+00:00",
+      "api": {
+        "status": 404,
+        "ms": 917,
+        "error": null
+      },
+      "web": {
+        "status": 200,
+        "ms": 1204,
+        "error": null
+      }
+    }
+  ],
+  "since": "2026-09-06T13:32:43+00:00",
+  "updated_at": "2026-09-06T13:32:43+00:00",
+  "method": "One HTTP GET per target per hour from a GitHub-hosted runner. Self-measured: one prober, one region, no third-party monitoring service. Runs where the prober itself could not reach the network are counted as unknown, not as downtime.",
+  "api_summary": {
+    "samples": 1,
+    "checked": 1,
+    "unreachable_prober": 0,
+    "up": 0,
+    "uptime_percent": 0.0,
+    "median_ms": null,
+    "last_status": 404
+  },
+  "web_summary": {
+    "samples": 1,
+    "checked": 1,
+    "unreachable_prober": 0,
+    "up": 1,
+    "uptime_percent": 100.0,
+    "median_ms": 1204,
+    "last_status": 200
+  }
+}

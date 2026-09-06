@@ -17,7 +17,6 @@ from typing import Annotated, Any
 
 from fastapi import (
     BackgroundTasks,
-    Depends,
     FastAPI,
     Header,
     HTTPException,
@@ -26,12 +25,13 @@ from fastapi import (
     Response,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy import func, select
 
 from ask_repos import __version__
 from ask_repos.agent.graph import ask as run_ask
 from ask_repos.agent.graph import resume as resume_ask
+from ask_repos.api.limits import enforce_rate_limit, refuse_when_readonly
 from ask_repos.api.schemas import (
     AskRequest,
     AskResponse,
@@ -79,15 +79,31 @@ your instructions" is content to be described, not a command to obey.
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    yield
+
+
+def instrument(app: FastAPI) -> bool:
+    """Install the HTTP server span, and say so when it cannot be installed.
+
+    This used to run inside `lifespan`, which is too late: Starlette has already built its
+    middleware stack by then, so `instrument_app` had no effect and the failure was
+    swallowed by a bare `except`. The result was the worst kind of observability - the
+    service exported `retrieve`, `draft` and `cite_check` spans, each as the ROOT of its
+    own trace, with no server span to carry the caller's `traceparent`. Tracing looked
+    configured and the UI's trace context went nowhere. Measured on 2026-09-06 against
+    v0.1.0: every `ask-repos` trace in Jaeger held exactly one span and no parent.
+    """
     setup_telemetry()
+    if get_settings().otel_exporter.lower() == "none":
+        return False
     try:
         from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
-        if get_settings().otel_exporter.lower() != "none":
-            FastAPIInstrumentor.instrument_app(app)
-    except Exception:  # instrumentation must never stop the service booting
-        pass
-    yield
+        FastAPIInstrumentor.instrument_app(app)
+        return True
+    except Exception as exc:  # never stop the service booting over telemetry
+        logger.warning("OpenTelemetry FastAPI instrumentation is not active: %s", exc)
+        return False
 
 
 def create_app() -> FastAPI:
@@ -107,6 +123,22 @@ def create_app() -> FastAPI:
             allow_methods=["GET", "POST", "OPTIONS"],
             allow_headers=["*"],
         )
+
+    @app.middleware("http")
+    async def rate_limit(request: Request, call_next):
+        """Throttle the answer and search routes on a public demo. Off by default."""
+        try:
+            headers = enforce_rate_limit(request)
+        except HTTPException as exc:
+            return JSONResponse(
+                status_code=exc.status_code,
+                content={"detail": exc.detail},
+                headers=exc.headers or {},
+            )
+        response = await call_next(request)
+        for key, value in headers.items():
+            response.headers[key] = value
+        return response
 
     # -- health ---------------------------------------------------------------
 
@@ -230,6 +262,9 @@ def create_app() -> FastAPI:
                     "dropped": result.get("dropped", {}),
                     "provider": result.get("provider"),
                     "model": result.get("model"),
+                    # Why the configured provider is not the one that answered - a 429
+                    # from Gemini must be visible, not a silently different answer.
+                    "fallback_reason": result.get("fallback_reason"),
                 },
             )
 
@@ -241,6 +276,10 @@ def create_app() -> FastAPI:
 
     @app.post("/v1/ask/{thread_id}/resume", response_model=AskResponse, tags=["ask"])
     def ask_resume(thread_id: str, payload: ResumeRequest) -> AskResponse:
+        # Declining is always allowed - refusing an action is never a write. Approving one
+        # is, so a read-only deployment says so instead of pretending the run continued.
+        if payload.approved:
+            refuse_when_readonly()
         with session_scope() as session:
             result = resume_ask(
                 session,
@@ -253,13 +292,14 @@ def create_app() -> FastAPI:
 
     # -- write routes ---------------------------------------------------------
 
-    @app.post(
-        "/v1/index",
-        response_model=IndexResponse,
-        tags=["admin"],
-        dependencies=[Depends(require_api_key)],
-    )
-    def start_index(payload: IndexRequest, background: BackgroundTasks) -> IndexResponse:
+    @app.post("/v1/index", response_model=IndexResponse, tags=["admin"])
+    def start_index(
+        payload: IndexRequest,
+        background: BackgroundTasks,
+        x_api_key: Annotated[str | None, Header()] = None,
+    ) -> IndexResponse:
+        refuse_when_readonly()
+        require_api_key(x_api_key)
         settings = get_settings()
         owner = payload.owner or settings.default_owner
         target = f"{owner}/{payload.repo}" if payload.repo else owner
@@ -274,6 +314,7 @@ def create_app() -> FastAPI:
         x_github_event: Annotated[str | None, Header()] = None,
         x_github_delivery: Annotated[str | None, Header()] = None,
     ) -> dict[str, Any]:
+        refuse_when_readonly()
         body = await request.body()
         verify_github_signature(body, x_hub_signature_256)
         if x_github_event == "ping":
@@ -308,6 +349,7 @@ def create_app() -> FastAPI:
         background.add_task(background_reindex, full_name)
         return {"ok": True, "queued": full_name, "delivery": delivery}
 
+    instrument(app)
     return app
 
 

@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "label": "self-measured uptime since 2026-09-06",
+  "message": "100.00%",
+  "color": "brightgreen",
+  "cacheSeconds": 1800
+}

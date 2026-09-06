@@ -1,0 +1,51 @@
+{
+  "name": "ask-repos-web",
+  "version": "0.2.0",
+  "private": true,
+  "description": "The ask-repos user interface: a streaming chat with verified citation chips, a corpus page and an evals page.",
+  "author": "Mohamed Mahmoud <medo433447@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build --turbopack",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "sync:evals": "node scripts/sync-evals.mjs",
+    "check:evals": "node scripts/sync-evals.mjs --check",
+    "prove:gates": "node scripts/prove-fails-first.mjs",
+    "prove:gates:e2e": "node scripts/prove-fails-first.mjs --e2e",
+    "shots": "playwright test shots",
+    "demo:record": "playwright test demo",
+    "demo:gif": "node scripts/make-demo-gif.mjs"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "1.9.1",
+    "@opentelemetry/exporter-trace-otlp-http": "0.222.0",
+    "@opentelemetry/resources": "2.11.0",
+    "@opentelemetry/sdk-trace-node": "2.11.0",
+    "@opentelemetry/semantic-conventions": "1.43.0",
+    "next": "15.5.25",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "server-only": "0.0.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "3.3.7",
+    "@playwright/test": "1.57.0",
+    "@types/node": "24.13.3",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "eslint": "9.39.5",
+    "eslint-config-next": "15.5.25",
+    "typescript": "5.9.3",
+    "vitest": "5.0.0"
+  },
+  "overrides": {
+    "postcss": ">=8.5.23"
+  }
+}

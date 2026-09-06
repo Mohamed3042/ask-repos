@@ -1,0 +1,112 @@
+name: web
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: web
+
+jobs:
+  quality:
+    name: lint + types + unit tests + build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Types
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm test
+      - name: The citation gate must fail first
+        # Sabotages `blobUrl` on a copy and requires the suite to go red, then requires the
+        # restored source to go green. A check that cannot fail is decoration.
+        run: npm run prove:gates
+      - name: The committed eval report matches the measured one
+        run: npm run check:evals
+      - name: Build
+        run: npm run build
+
+  e2e:
+    name: Playwright against a live API
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: askrepos
+          POSTGRES_PASSWORD: askrepos
+          POSTGRES_DB: askrepos
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U askrepos -d askrepos"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DATABASE_URL: postgresql+psycopg://askrepos:askrepos@localhost:5432/askrepos
+      ASK_REPOS_MODEL_CACHE: ${{ github.workspace }}/.fastembed_cache
+      ASK_REPOS_API_URL: http://127.0.0.1:8080
+      # No GEMINI_API_KEY here on purpose: the browser journey runs on the keyless
+      # extractive path, which is deterministic. A flaky e2e is a deleted e2e.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Cache local ONNX models
+        uses: actions/cache@v4
+        with:
+          path: .fastembed_cache
+          key: fastembed-bge-small-en-v1.5-msmarco-minilm-l6-v2
+      - name: Install the service
+        working-directory: .
+        run: python -m pip install -e .
+      - name: Migrate and load the frozen corpus (no network)
+        working-directory: .
+        run: |
+          ask-repos migrate
+          ask-repos evals load --source evals/corpus \
+            --exclude flagship-portfolio,Flagship-One-Page
+      - name: Start the API
+        working-directory: .
+        run: |
+          ask-repos serve --host 127.0.0.1 --port 8080 &
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8080/health >/dev/null; then break; fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:8080/v1/corpus | head -c 300; echo
+      - run: npm ci
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run the browser journey
+        run: npm run e2e
+      - name: The chip-href gate must fail first, in the browser too
+        run: node scripts/prove-fails-first.mjs --e2e
+      - name: Upload screenshots, traces and the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            web/playwright-report/
+            web/test-results/
+          retention-days: 14

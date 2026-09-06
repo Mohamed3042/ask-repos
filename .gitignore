@@ -16,3 +16,6 @@ index_run.log
 *.log
 evals/reports-ci/
 evals/reports-live/
+
+# Local Netlify folder
+.netlify

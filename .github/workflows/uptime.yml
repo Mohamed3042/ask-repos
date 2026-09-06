@@ -1,0 +1,44 @@
+name: uptime
+
+on:
+  schedule:
+    # Hourly. The record this produces is self-measured: one prober, one region, one
+    # request per target per hour. It is not a monitoring service and the badge says so.
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    if: github.repository == 'Mohamed3042/ask-repos'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Probe both URLs
+        run: |
+          python scripts/uptime_probe.py \
+            --api https://medo4334-ask-repos.hf.space/health \
+            --web https://ask-repos-live.netlify.app/ \
+            --out docs/proof
+      - name: Commit the sample
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/proof/uptime.json docs/proof/uptime-badge.json
+          if git diff --cached --quiet; then
+            echo "nothing changed"
+          else
+            git commit -m "chore(uptime): record hourly probe"
+            # Another job may have pushed since checkout; rebase rather than force.
+            git pull --rebase --autostash origin main
+            git push origin HEAD:main
+          fi
