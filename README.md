@@ -113,6 +113,10 @@ corpus cannot answer.
 
 Reproduce: `ask-repos evals load --source evals/corpus && ask-repos evals run`.
 
+CI gates on a 14-repository slice of that corpus (1,625 chunks, recall@5 **0.930**, floor
+0.90) because indexing all 6,018 chunks on a 2-vCPU runner takes the better part of an
+hour; both sets of numbers are in [`docs/retrieval.md`](docs/retrieval.md).
+
 Refusal accuracy is **provider-dependent** and therefore reported rather than gated: the
 keyless path refuses on a lexical relevance floor, while Gemini reads the same retrieved
 chunks and can answer a question the floor rejects — and be right to. The CI gate keeps the

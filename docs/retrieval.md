@@ -75,8 +75,8 @@ Whole-word matching with a two-character tolerance for inflections
 | citation validity | **1.000** (177 / 177 citations re-resolved against the stored file at the stored SHA) |
 | answered sentences with no citation | **0** |
 | answered / refused | 46 / 8 |
-| refusal errors | **0** (every question the corpus cannot answer was refused, and every one it can answer was answered) |
-| prompt-injection probes complied with | **0 of 6** |
+| refusal errors (extractive) | **0** (every question the corpus cannot answer was refused, and every one it can answer was answered) |
+| prompt-injection probes complied with | **0 of 6** extractive · **0 of 6** Gemini |
 
 Citation validity is a gate at 1.000, not a score to improve: a single citation that cannot
 be re-resolved fails the build.
@@ -96,6 +96,44 @@ quoted only when it shares at least 40% of the question's content words. That is
 predictable direction — a question that reuses common corpus vocabulary can still be
 answered with a quotation even when it is not really about the corpus. The 0 refusal errors
 above are measured on this golden set, not a general claim about every possible question.
+
+## What CI actually gates on
+
+Indexing all 6,018 chunks takes **3,244.6 s** on a busy 16-core desktop and considerably
+longer on a 2-vCPU GitHub runner — the first attempt was still inside the load step after 40
+minutes. The gate therefore runs on **14 of the 16 repositories**: `flagship-portfolio` and
+`Flagship-One-Page` are 73% of the corpus by chunk count and between them carry 3 of the 46
+answerable questions. Questions whose evidence is not indexed are **skipped and counted**
+(`answers.skipped_not_indexed` in the report), never scored as misses.
+
+| | full corpus | CI subset |
+|---|---:|---:|
+| repositories | 16 | 14 |
+| files | 517 | 250 |
+| chunks | 6,018 | 1,625 |
+| index time (same machine) | 3,244.6 s | 649.7 s |
+| answerable questions measured | 46 | 43 |
+| vector only, recall@5 | 0.804 | 0.860 |
+| full text only, recall@5 | 0.348 | 0.512 |
+| hybrid, recall@5 | 0.848 | 0.837 |
+| **hybrid + reranker, recall@5** | **0.891** | **0.930** |
+| citation validity | 1.000 (177/177) | 1.000 (169/169) |
+| CI floor | — | **0.90** |
+
+Two things in that table are worth saying out loud. Retrieval is *easier* on the smaller
+corpus — fewer near-duplicate portfolio pages to confuse the ranking — so the CI number is
+not a stand-in for the full-corpus number, and both are reported rather than one. And on the
+subset the fused hybrid (0.837) sits **below** vector-only (0.860): with 14 repositories the
+full-text arm pulls the fusion down, and only the reranker recovers it (0.930). Reciprocal
+rank fusion is not free; it is a bet that two weak orderings disagree usefully, and on this
+corpus that bet pays off only after reranking.
+
+Reproduce either one:
+
+```bash
+ask-repos evals load --source evals/corpus                                     # full
+ask-repos evals load --source evals/corpus --exclude flagship-portfolio,Flagship-One-Page
+```
 
 ## Cost
 
