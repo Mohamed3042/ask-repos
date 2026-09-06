@@ -160,7 +160,12 @@ export default async function EvalsPage() {
                 <span className="mono small" dir="ltr">
                   {probe.id}
                 </span>
-                <span className="small muted">{probe.question}</span>
+                {/* The probe questions are English inside an Arabic (RTL) page, so
+                    without this the trailing "?" is reordered to the front. `auto` lets
+                    the browser pick per string rather than pinning everything LTR. */}
+                <span className="small muted" dir="auto">
+                  {probe.question}
+                </span>
                 {probe.refused ? (
                   <span className="tag tag-off">{dictionary.evals.refused}</span>
                 ) : null}
