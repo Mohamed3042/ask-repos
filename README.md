@@ -37,8 +37,10 @@ fires — that gate is the thing worth showing. Run it yourself to point it at a
 The API runs on a Render **Free** instance built from [`deploy/hf-space/Dockerfile`](deploy/hf-space/Dockerfile)
 (one container: the CI-published image plus PostgreSQL 16 and pgvector, corpus baked in at
 build time). Free instances sleep after ~15 minutes idle, so the first question after a pause
-can take 30 s or more while it wakes; the interface says so. How it was created, what it
-cost, and what 512 MB taught the reranker: [`deploy/render/`](deploy/render/).
+can take 30 s or more while it wakes, and on the instance's 0.1 CPU an answer takes one to two
+minutes (measured: 75–137 s across twelve questions on 2026-09-07); the interface streams the
+sentences as they clear citation checking and says where they come from. How it was created,
+what it cost, and what 512 MB taught the reranker: [`deploy/render/`](deploy/render/).
 
 ![answers with citation chips](docs/proof/shots/local-ask-answered.png)
 

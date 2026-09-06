@@ -55,6 +55,8 @@ were deployed and measured in turn:
 | reranker batch 64 → 8 (`ASK_REPOS_RERANK_BATCH`) | fewer pairs per forward pass | killed after answer 1 |
 | onnxruntime arena off + batch 1 | see below; uvicorn still PID 1 | killed 19–37 s after answer 1, health checks green, cgroup peak 456 MB, no exit line |
 | the server as a child of the entrypoint shell | shell is PID 1, reports the server's exit status | **6 of 6 answered, 0 restarts**, cgroup steady 424 MB, peak 469 MB |
+| + server pinned to one CPU (`ASK_REPOS_CPUSET=0`) | thread pools sized to one CPU | **6 of 6, 0 restarts**; 75–131 s per answer — no faster, so the pools were not the cost |
+| + glibc mmap/trim thresholds raised | freed buffers stay in the heap | two concurrent answers, then the container died with no exit line at all (whole-group kill); **reverted** |
 
 The last row is the same image bytes as the row above it. With uvicorn as PID 1 the container was
 restarted 19–37 s after every answer — no kernel memory kill (the in-container sampler saw the
