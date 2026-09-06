@@ -12,3 +12,7 @@ evals/reports/
 .coverage
 index_run.log
 .claude/
+.venv-verify/
+*.log
+evals/reports-ci/
+evals/reports-live/

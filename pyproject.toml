@@ -45,6 +45,8 @@ dev = [
   "ruff==0.16.6",
   "respx==0.23.1",
 ]
+# Only for `scripts/shots.py`, which photographs the running service for the changelog.
+shots = ["playwright==1.57.0"]
 
 [project.urls]
 Homepage = "https://github.com/Mohamed3042/ask-repos"
