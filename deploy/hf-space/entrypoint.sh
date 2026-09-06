@@ -27,15 +27,28 @@ trap 'pg_ctl -D "$PGDATA" -m fast stop >/dev/null 2>&1 || true' TERM INT
 echo "ask-repos: read-only=${ASK_REPOS_READONLY:-0} rate-limit=${ASK_REPOS_RATE_LIMIT_PER_MINUTE:-0}/min"
 ask-repos corpus || echo "ask-repos: corpus summary unavailable at start-up"
 
-# ASK_REPOS_MEMORY_LOG=<seconds>: print the container's memory counter (cgroup v2 or v1) and
-# the server's resident set every N seconds. The sampler is forked before `exec`, so it
-# outlives the shell and keeps writing to the same log the host collects. It is how the
-# 512 MB kill on the hosted demo was finally measured from inside rather than guessed.
+# The server runs as a child of this shell rather than replacing it with `exec`. Two reasons,
+# both measured on the 512 MB hosted demo (2026-09-06, Render Free):
+#   - with uvicorn as PID 1 the container was restarted 19-37 s after every answer, health
+#     checks green throughout, no traceback, no exit line, the cgroup counter peaking at
+#     456 MB; with this shell as PID 1 the same image survived the same questions. The host
+#     side of that difference is not visible from inside a container; what is visible is
+#     recorded here and in deploy/render/README.md;
+#   - when the server does die, the shell can say HOW: 137 is the kernel's memory kill,
+#     139 a native crash, anything else Python - and hands that status to the host.
+ask-repos serve --host 0.0.0.0 --port "${PORT:-7860}" &
+server=$!
+trap 'kill -TERM "$server" 2>/dev/null; pg_ctl -D "$PGDATA" -m fast stop >/dev/null 2>&1 || true' TERM INT
+
+# ASK_REPOS_MEMORY_LOG=<seconds>: print the container's memory counter (cgroup v2 or v1), the
+# server's resident set and PostgreSQL's every N seconds. Off unless set: on a 0.1-CPU
+# instance the sampler itself is measurable. It is how the kill above was measured from
+# inside rather than guessed.
 if [ -n "${ASK_REPOS_MEMORY_LOG:-}" ]; then
   (
-    while :; do
+    while kill -0 "$server" 2>/dev/null; do
       cg=$(cat /sys/fs/cgroup/memory.current 2>/dev/null || cat /sys/fs/cgroup/memory/memory.usage_in_bytes 2>/dev/null || echo 0)
-      rss=$(awk '/VmRSS/ {print $2 * 1024}' /proc/1/status 2>/dev/null || echo 0)
+      rss=$(awk '/VmRSS/ {print $2 * 1024}' "/proc/$server/status" 2>/dev/null || echo 0)
       pg=0
       for p in /proc/[0-9]*; do
         if grep -qs '^Name:.*postgres' "$p/status" 2>/dev/null; then
@@ -48,12 +61,6 @@ if [ -n "${ASK_REPOS_MEMORY_LOG:-}" ]; then
   ) &
 fi
 
-# The server runs as a child rather than replacing the shell, so that when it dies the shell
-# can report HOW: 137 is the kernel's memory kill, 139 a native crash, anything else Python.
-# The status is then handed to the host, which restarts the container as before.
-ask-repos serve --host 0.0.0.0 --port "${PORT:-7860}" &
-server=$!
-trap 'kill -TERM "$server" 2>/dev/null; pg_ctl -D "$PGDATA" -m fast stop >/dev/null 2>&1 || true' TERM INT
 wait "$server"
 code=$?
 echo "ask-repos: server exited with status $code (cgroup=$(( $(cat /sys/fs/cgroup/memory.current 2>/dev/null || cat /sys/fs/cgroup/memory/memory.usage_in_bytes 2>/dev/null || echo 0) / 1048576 ))MB at exit)"

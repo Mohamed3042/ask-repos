@@ -53,7 +53,21 @@ were deployed and measured in turn:
 |---|---|---|
 | PostgreSQL trimmed (`ASK_REPOS_PG_OPTIONS`) | smaller shared_buffers, no autovacuum, no parallel workers | killed after answer 1 |
 | reranker batch 64 → 8 (`ASK_REPOS_RERANK_BATCH`) | fewer pairs per forward pass | killed after answer 1 |
-| onnxruntime arena off + batch 1 | see below | measured after this merge; the number is in the repository's brief |
+| onnxruntime arena off + batch 1 | see below; uvicorn still PID 1 | killed 19–37 s after answer 1, health checks green, cgroup peak 456 MB, no exit line |
+| the server as a child of the entrypoint shell | shell is PID 1, reports the server's exit status | **6 of 6 answered, 0 restarts**, cgroup steady 424 MB, peak 469 MB |
+
+The last row is the same image bytes as the row above it. With uvicorn as PID 1 the container was
+restarted 19–37 s after every answer — no kernel memory kill (the in-container sampler saw the
+cgroup counter peak at 456 MB of 512), no traceback, no exit status, health checks answering
+every five seconds throughout. With a shell as PID 1 and the server as its child, the same
+questions were answered six times in a row without a restart. Whatever the host does with a
+container whose PID 1 is the application, it is not visible from inside, so it is recorded as
+measured behaviour rather than explained. The shell also prints the server's exit status when
+it does die (137 kernel kill, 139 native crash), which every earlier deploy lacked.
+
+Answers on the Free instance are slow: 99–165 s each in that run, measured with the memory
+sampler on (`ASK_REPOS_MEMORY_LOG`, off by default) and 0.1 CPU; the interface streams sentence
+by sentence and says the API is a Free instance.
 
 The instrument that settled it was local: peak working set of one process loading the same two
 models and scoring 30 passages. With onnxruntime's default CPU memory arena the process holds

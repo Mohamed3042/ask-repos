@@ -20,7 +20,11 @@
 # the push webhook and *approving* an agent-requested re-index into 403s. The interrupt
 # itself still fires, because the approval gate is the thing worth showing.
 
-ARG BASE=ghcr.io/mohamed3042/ask-repos:latest
+# Pinned to the commit-sha tag CI publishes, not `:latest`. Two measured reasons: a build host
+# caches the 36-minute corpus bake below only while the base digest is unchanged, and `:latest`
+# moves on every merge to main whether or not the runtime changed; and the hosted demo's numbers
+# describe one set of bytes. Bump deliberately when a release should reach the demo.
+ARG BASE=ghcr.io/mohamed3042/ask-repos:aaa0aa4805ed02a3d19b3554ae4392779096cede
 FROM ${BASE} AS space
 
 USER root
@@ -108,8 +112,7 @@ ENV ASK_REPOS_READONLY=1 \
 #     autovacuum and parallel query are set to the minimum;
 #   - MALLOC_ARENA_MAX stops glibc from keeping one arena per thread alive for the
 #     onnxruntime and uvicorn thread pools.
-ENV ASK_REPOS_MEMORY_LOG=2 \
-    ASK_REPOS_RERANK_BATCH=1 \
+ENV ASK_REPOS_RERANK_BATCH=1 \
     ASK_REPOS_ONNX_ARENA=0 \
     ASK_REPOS_PG_OPTIONS="-c shared_buffers=16MB -c max_connections=20 -c work_mem=1MB -c maintenance_work_mem=8MB -c autovacuum=off -c max_parallel_workers=0 -c max_worker_processes=2 -c wal_buffers=1MB -c effective_cache_size=64MB -c synchronous_commit=off -c huge_pages=off" \
     MALLOC_ARENA_MAX=2
