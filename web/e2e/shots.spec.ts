@@ -46,7 +46,7 @@ async function shootHighlighted(
   });
   await page.locator(selector).first().waitFor({ state: "visible" });
   await shoot(page, name, fullPage);
-  await style.evaluate((node) => node.remove());
+  await style.evaluate((node) => (node as Element).remove());
 }
 
 test.describe("documentation screenshots", () => {
