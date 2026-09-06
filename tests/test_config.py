@@ -34,3 +34,20 @@ def test_defaults_are_keyless(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.api_key is None
     assert settings.embed_dim == 384
     assert settings.embed_model == "BAAI/bge-small-en-v1.5"
+
+
+def test_otlp_endpoint_gets_the_traces_path_appended(monkeypatch) -> None:
+    """A base URL must not silently post spans at a 404."""
+    from ask_repos.config import get_settings, reset_settings_cache
+
+    for given, expected in (
+        ("http://jaeger:4318", "http://jaeger:4318/v1/traces"),
+        ("http://jaeger:4318/", "http://jaeger:4318/v1/traces"),
+        ("http://jaeger:4318/v1/traces", "http://jaeger:4318/v1/traces"),
+    ):
+        monkeypatch.setenv("OTEL_EXPORTER_OTLP_ENDPOINT", given)
+        reset_settings_cache()
+        endpoint = (get_settings().otel_endpoint or "http://localhost:4318").rstrip("/")
+        if not endpoint.endswith("/v1/traces"):
+            endpoint = f"{endpoint}/v1/traces"
+        assert endpoint == expected

@@ -1,0 +1,47 @@
+name: deploy the API Space
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "deploy/hf-space/**"
+      - "evals/corpus/**"
+      - ".github/workflows/deploy-space.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-space
+  cancel-in-progress: false
+
+jobs:
+  space:
+    name: upload to huggingface.co/spaces/Medo4334/ask-repos
+    runs-on: ubuntu-latest
+    if: github.repository == 'Mohamed3042/ask-repos'
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+    steps:
+      - name: Is the token present?
+        id: creds
+        run: |
+          if [ -n "$HF_TOKEN" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::HF_TOKEN is not set; skipping the Space upload. Set it with \
+            gh secret set HF_TOKEN -R Mohamed3042/ask-repos"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.creds.outputs.ok == 'true'
+      - uses: actions/setup-python@v5
+        if: steps.creds.outputs.ok == 'true'
+        with:
+          python-version: "3.12"
+      - name: Upload and wait for the Space to answer
+        if: steps.creds.outputs.ok == 'true'
+        run: |
+          python -m pip install --quiet "huggingface_hub>=1.0,<2"
+          python scripts/deploy_space.py --space Medo4334/ask-repos

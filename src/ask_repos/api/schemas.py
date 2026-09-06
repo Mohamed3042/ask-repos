@@ -38,11 +38,20 @@ class SentenceOut(BaseModel):
 
 
 class AskResponse(BaseModel):
+    """The result of one run.
+
+    A run that stopped at the human-approval interrupt has produced no answer yet, so
+    `answer` is empty and `refused` is false; `status` is the field that distinguishes
+    "not answered yet" from "answered". Before these defaults existed, an interrupted
+    `POST /v1/ask` failed response validation and the route returned 500 - the streaming
+    route handled the case and the JSON route did not.
+    """
+
     status: Literal["ok", "interrupted"] = "ok"
     thread_id: str
     question: str | None = None
-    answer: str
-    refused: bool
+    answer: str = Field(default="", description="Empty while status is 'interrupted'")
+    refused: bool = Field(default=False, description="Meaningful only when status is 'ok'")
     sentences: list[SentenceOut] = []
     dropped: dict[str, int] = {}
     provider: str | None = None

@@ -1,0 +1,22 @@
+# Line endings.
+#
+# `core.autocrlf=true` is common on Windows, and it turned `deploy/entrypoint.sh` into a
+# CRLF file in the working tree. The kernel then reads the shebang as `/bin/sh\r`, and the
+# container dies at start-up with `exec /usr/local/bin/entrypoint.sh: no such file or
+# directory` — a message that names the file it just failed to run. CI never saw it,
+# because Linux runners check out LF. Anything a Linux kernel or shell has to interpret is
+# therefore pinned to LF here, whatever the cloner's git is configured to do.
+* text=auto
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+
+# Binary payloads git must not touch.
+*.png binary
+*.jpg binary
+*.gif binary
+*.webm binary
+*.zip binary
+*.gz binary
+*.ico binary

@@ -59,7 +59,12 @@ def setup_telemetry(service_name: str = "ask-repos") -> None:
     if exporter_kind == "otlp":
         from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 
-        endpoint = settings.otel_endpoint or "http://localhost:4318/v1/traces"
+        # `OTEL_EXPORTER_OTLP_ENDPOINT` is conventionally the *base* URL, and this
+        # exporter wants the full traces path. Posting to the base gives a 404 that the
+        # batch processor swallows: tracing looks configured and no span ever arrives.
+        endpoint = (settings.otel_endpoint or "http://localhost:4318").rstrip("/")
+        if not endpoint.endswith("/v1/traces"):
+            endpoint = f"{endpoint}/v1/traces"
         provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint=endpoint)))
     else:
         provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))

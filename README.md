@@ -5,6 +5,7 @@
 [![PostgreSQL 16 + pgvector](https://img.shields.io/badge/store-pgvector-14425c)](https://github.com/pgvector/pgvector)
 [![citation validity 100%](https://img.shields.io/badge/citation%20validity-100%25-16a36a)](docs/retrieval.md)
 [![MIT](https://img.shields.io/badge/licence-MIT-4a4a4a)](LICENSE)
+[![uptime](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FMohamed3042%2Fask-repos%2Fmain%2Fdocs%2Fproof%2Fuptime-badge.json)](docs/proof/uptime.json)
 
 > **Ask any GitHub account about its repositories — every answer cites file and line, or refuses.**
 
@@ -20,6 +21,26 @@ cannot anchor is dropped. When nothing survives, it says so:
 
 That refusal is the product. Everything else is machinery for making it rare and making the
 alternative trustworthy.
+
+## Try it
+
+| | |
+|---|---|
+| **Interface** | **<https://ask-repos-live.netlify.app>** — ask, see the citation chips, open the lines |
+| **API** | **<https://medo4334-ask-repos.hf.space>** — `/docs`, `/v1/corpus`, `/health` |
+
+The hosted demo is **read-only and rate limited**: a fixed 14-repository corpus (250 files,
+1,625 chunks) baked into the image, 12 questions a minute per visitor, and `POST /v1/index`,
+the push webhook and *approving* a re-index all answering 403. The approval interrupt still
+fires — that gate is the thing worth showing. Run it yourself to point it at any account.
+
+![answers with citation chips](docs/proof/shots/local-ask-answered.png)
+
+The uptime badge above is **self-measured**: an hourly GitHub Actions job curls both URLs
+and commits the sample to [`docs/proof/uptime.json`](docs/proof/uptime.json), which is what
+the badge is computed from. One prober, one region, hourly — not a monitoring service, and
+runs where the prober itself could not reach the network are counted as unknown rather than
+as downtime.
 
 ## Verify in two minutes
 
@@ -57,6 +78,32 @@ ask-repos ask "Which certifications does the author hold?"
 
 ```
 Not in the corpus. I could not anchor an answer to indexed file lines, so I am not answering.
+```
+
+### …and the interface, in one more minute
+
+```bash
+docker compose up -d db api          # the API on :8080
+cd web && npm ci && npm run dev      # the UI on :3000
+```
+
+Open <http://localhost:3000>. Or check it without a browser:
+
+```bash
+cd web && npm test && npm run prove:gates
+```
+
+```
+Test Files  2 passed (2)
+     Tests  24 passed (24)
+
+== unit: blobUrl must equal the URL the API returned ==
+sabotage applied to lib/citations.ts
+  "/blob/${citation.sha}/" -> "/blob/${citation.sha.slice(0, 7)}/"
+vitest: exit 1 → RED
+== unit: the same suite, unsabotaged ==
+vitest: exit 0 → GREEN
+ALL GATES FAILED FIRST (as required).
 ```
 
 ## How it works
@@ -167,6 +214,53 @@ quoting public repository text is the job. It will not go looking for secrets, a
 indexes public repositories — but it is not a secret scanner, and a key committed to a public
 repository is already public.
 
+## The interface
+
+`web/` is a Next.js 15 app (App Router, React 19, TypeScript strict, no UI framework) with
+three pages:
+
+| page | what it is for |
+|---|---|
+| `/` | Ask. Sentences stream in one at a time as each clears verification, each with citation chips that open the exact GitHub lines. A refusal is rendered distinctly, and "copy answer with citations" gives you the text and every anchor. |
+| `/corpus` | What the answers are drawn from: repositories, files, chunks, when each was last read, webhook health, and a *Request a re-index* button that shows the human-approval interrupt instead of re-indexing. |
+| `/evals` | The committed eval report: the gated numbers, retrieval per arm, and every injection probe with what the service actually said. |
+
+English and Arabic with real right-to-left (server-rendered from a cookie, so the first
+painted frame is correct), light and dark, keyboard-operable. Lighthouse 12 on the live
+site scores **100 for accessibility, best practices, SEO and performance** on all three
+pages, and `web/e2e/a11y.spec.ts` runs axe-core over every page in both themes, in Arabic,
+and over the answered and refused states — it caught a real 4.08:1 contrast regression that
+reading the stylesheet did not ([ADR 0006](docs/adr/0006-nextjs-app-router.md)).
+
+<p align="center">
+  <img src="docs/proof/shots/local-corpus-arabic.png" width="47%" alt="the corpus page in Arabic, right to left" />
+  <img src="docs/proof/shots/local-evals-dark.png" width="47%" alt="the evals page in dark mode" />
+</p>
+
+**The browser never holds a secret.** Every request goes to a Next.js route handler on the
+same origin, which calls the API from the server; `lib/api.ts` starts with
+`import "server-only"`, so importing it from a client component is a build error rather
+than a code-review comment ([ADR 0007](docs/adr/0007-server-side-secrets-proxy.md)).
+
+Those route handlers forward a W3C `traceparent`, so one trace covers both services.
+Measured 2026-09-06 — 18 spans, 2 services, `ask-repos` span `67a34151bd4380a7` parented to
+`ask-repos-web` span `6637b33f0ec7a0f5`:
+
+![one trace across the UI and the API](docs/proof/trace-ui-to-api.png)
+
+```bash
+cd web
+npm ci
+npm test          # 24 unit tests: the citation parser and the trace context
+npm run e2e       # 14 Playwright specs against a real API — no mocked routes
+npm run prove:gates   # sabotages blobUrl on a copy; the suite must go red, then green
+```
+
+The chip's href is **rebuilt** from the citation's parts rather than copied from the API,
+and both the unit test and the browser test assert the two agree — for real citations from
+a recorded response and from the live stream respectively. `npm run prove:gates` exists
+because a test that cannot fail is decoration.
+
 ## Use it from an assistant
 
 ```bash
@@ -212,9 +306,14 @@ gh api -X POST repos/<owner>/<repo>/hooks -f name=web -F active=true   -f 'event
 ```
 
 The route verifies `X-Hub-Signature-256`, ignores replayed delivery ids and private
-repositories, and queues the re-index in the background. It is **not** installed on this
-account's repositories: that needs a publicly reachable URL, and this lane ships no hosted
-deployment. The signature, replay and private-push paths are covered in `tests/test_api.py`.
+repositories, and queues the re-index in the background. The signature, replay and
+private-push paths are covered in `tests/test_api.py`, and `/corpus` reports the webhook's
+health — *not configured* is shown as its own state, distinct from zero deliveries.
+
+It is **not** installed on this account's repositories. There is a public URL now, but the
+hosted deployment is read-only: its corpus is baked into the image and it answers the
+webhook with 403 ([ADR 0008](docs/adr/0008-space-readonly-corpus.md)). Run your own
+instance to keep a corpus fresh from pushes.
 
 Point it at any account: `ask-repos index --owner <login>`. Private repositories are refused
 twice — once when listing, once in the pipeline — even with a token that could see them.
@@ -239,7 +338,11 @@ ask-repos evals snapshot --owner <login> | evals load | evals run
 * The approval thread for an agent-initiated re-index lives in memory and does not survive a
   restart ([ADR 0003](docs/adr/0003-langgraph-interrupt.md)).
 * Read routes are unauthenticated by design; everything indexed is already public.
-* No UI yet. The API's CORS allowlist (`ASK_REPOS_CORS_ORIGINS`) is there for one.
+* The hosted demo answers from a corpus frozen at image-build time, so it cannot follow
+  the repositories; the push webhook that would is documented, tested and disabled there
+  ([ADR 0008](docs/adr/0008-space-readonly-corpus.md)). Run it yourself for a live corpus.
+* The demo's rate limiter is per-container and in-process — right for one instance, wrong
+  for several.
 
 ## Licence
 

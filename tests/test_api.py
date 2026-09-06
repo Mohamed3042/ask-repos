@@ -226,3 +226,51 @@ def test_webhook_ignores_private_pushes_and_pings(
     )
     assert response.json()["ignored"] == "private repository"
     assert captured_reindex == [], "a private push never queues an index run"
+
+
+def test_interrupted_run_returns_200_through_the_json_route(api_client: TestClient) -> None:
+    """v0.1.0 regression: the interrupt path answered 500 because `AskResponse` required
+    `answer` and `refused`, which an interrupted run does not have. Measured on the
+    untouched v0.1.0 container before the fix: `HTTP 500`, `Field required ... answer`.
+    """
+    reset_settings_cache()
+    response = api_client.post("/v1/ask", json={"question": "reindex Mohamed3042"})
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "interrupted"
+    assert payload["answer"] == ""
+    assert payload["refused"] is False
+    assert payload["request"]["action"] == "reindex"
+    assert payload["thread_id"]
+
+
+def test_server_span_is_installed_when_tracing_is_on(monkeypatch: pytest.MonkeyPatch) -> None:
+    """v0.1.0 regression: instrumentation ran in `lifespan`, after Starlette had built its
+    middleware stack, and the failure was swallowed. Measured RED against v0.1.0 in Jaeger:
+    every `ask-repos` trace held a single root span (`retrieve` / `draft` / `cite_check`)
+    with no parent, so the UI's `traceparent` was never joined.
+    """
+    from ask_repos.api.app import create_app, instrument
+
+    def stack(app) -> list[str]:
+        # The instrumentation wraps `build_middleware_stack`, so it is not in
+        # `user_middleware`; the only honest place to look is the stack that gets built.
+        names: list[str] = []
+        node = app.build_middleware_stack()
+        while node is not None:
+            names.append(type(node).__name__)
+            node = getattr(node, "app", None)
+        return names
+
+    monkeypatch.setenv("ASK_REPOS_OTEL_EXPORTER", "console")
+    reset_settings_cache()
+    app = create_app()
+    assert app._is_instrumented_by_opentelemetry is True
+    assert "OpenTelemetryMiddleware" in stack(app), stack(app)
+    # Idempotent: create_app already instrumented it, and a second call must not raise.
+    assert instrument(app) is True
+
+    monkeypatch.setenv("ASK_REPOS_OTEL_EXPORTER", "none")
+    reset_settings_cache()
+    off = create_app()
+    assert "OpenTelemetryMiddleware" not in stack(off), stack(off)
