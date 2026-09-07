@@ -37,10 +37,14 @@ fires — that gate is the thing worth showing. Run it yourself to point it at a
 The API runs on a Render **Free** instance built from [`deploy/hf-space/Dockerfile`](deploy/hf-space/Dockerfile)
 (one container: the CI-published image plus PostgreSQL 16 and pgvector, corpus baked in at
 build time). Free instances sleep after ~15 minutes idle, so the first question after a pause
-can take 30 s or more while it wakes, and on the instance's 0.1 CPU an answer takes one to two
-minutes (measured: 75–137 s across twelve questions on 2026-09-07); the interface streams the
-sentences as they clear citation checking and says where they come from. How it was created,
-what it cost, and what 512 MB taught the reranker: [`deploy/render/`](deploy/render/).
+can take 30 s or more while it wakes. **The hosted demo serves the hybrid arm without the
+cross-encoder reranker**: on the instance's 0.1 CPU the reranker made an answer take 75–137 s
+(measured across twelve questions on 2026-09-07), longer than the interface's proxy will wait,
+so it is off there and an answer takes 2–4 s warm (about 10 s for the first one, while the
+embedding model loads). The reranked numbers in
+[`docs/retrieval.md`](docs/retrieval.md) come from CI and from `docker compose up`, where the
+same code runs with it on. How it was created, what it cost, and what 512 MB taught the
+reranker: [`deploy/render/`](deploy/render/).
 
 ![answers with citation chips](docs/proof/shots/local-ask-answered.png)
 

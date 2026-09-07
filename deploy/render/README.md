@@ -57,6 +57,14 @@ were deployed and measured in turn:
 | the server as a child of the entrypoint shell | shell is PID 1, reports the server's exit status | **6 of 6 answered, 0 restarts**, cgroup steady 424 MB, peak 469 MB |
 | + server pinned to one CPU (`ASK_REPOS_CPUSET=0`) | thread pools sized to one CPU | **6 of 6, 0 restarts**; 75–131 s per answer — no faster, so the pools were not the cost |
 | + glibc mmap/trim thresholds raised | freed buffers stay in the heap | two concurrent answers, then the container died with no exit line at all (whole-group kill); **reverted** |
+| + reranker off (`ASK_REPOS_RERANK=0`) | hybrid arm only; the cross-encoder never loads | **6 of 6, 0 restarts; 2.2–3.3 s per answer warm**, 10.5 s for the first while the embedder loads; interface answer 6.0 s. This is what the demo serves |
+
+Why the last row exists: the interface reaches the API through a Netlify function, and Netlify's
+gateway answered `504` after 31 s while the reranked answer was still being computed — with the
+reranker on, no answer could reach a visitor at all. On a 0.1-CPU, 512 MB instance the
+cross-encoder cannot be both fast (one batch with the arena on, 7 s, 755 MB) and small (batch 1
+with the arena off, 323 MB, 75–137 s). The demo says which arm it serves; the reranked numbers in
+`docs/retrieval.md` come from CI and `docker compose up`, where the same code runs with it on.
 
 The last row is the same image bytes as the row above it. With uvicorn as PID 1 the container was
 restarted 19–37 s after every answer — no kernel memory kill (the in-container sampler saw the

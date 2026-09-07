@@ -116,7 +116,15 @@ ENV ASK_REPOS_READONLY=1 \
 # buffers stay in the heap between forward passes. Two concurrent answers then killed the
 # container again (no exit line at all - a whole-group kill), where the same image without
 # the thresholds had answered six in a row. Memory beats latency here.
-ENV ASK_REPOS_CPUSET=0 \
+# The cross-encoder is off in the hosted demo. Measured 2026-09-07 on Render Free (0.1 CPU,
+# 512 MB): with it, an answer takes 75-137 s and the interface's Netlify proxy gives up at
+# 31 s with a 504, so no answer ever reaches a visitor; without it, an answer takes 2-4 s warm
+# (about 10 s for the first one while the embedding model loads).
+# The demo therefore serves the hybrid arm (pgvector + full text, rank-fused) and says so; the
+# reranked numbers in docs/retrieval.md come from CI and from `docker compose up`, where the
+# same code runs with the reranker on. `ASK_REPOS_RERANK=1` restores it.
+ENV ASK_REPOS_RERANK=0 \
+    ASK_REPOS_CPUSET=0 \
     ASK_REPOS_RERANK_BATCH=1 \
     ASK_REPOS_ONNX_ARENA=0 \
     ASK_REPOS_PG_OPTIONS="-c shared_buffers=16MB -c max_connections=20 -c work_mem=1MB -c maintenance_work_mem=8MB -c autovacuum=off -c max_parallel_workers=0 -c max_worker_processes=2 -c wal_buffers=1MB -c effective_cache_size=64MB -c synchronous_commit=off -c huge_pages=off" \
