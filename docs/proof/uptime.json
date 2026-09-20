@@ -1095,27 +1095,40 @@
         "ms": 4627,
         "error": null
       }
+    },
+    {
+      "at": "2026-09-20T19:27:00+00:00",
+      "api": {
+        "status": 200,
+        "ms": 42551,
+        "error": null
+      },
+      "web": {
+        "status": 200,
+        "ms": 4249,
+        "error": null
+      }
     }
   ],
   "since": "2026-09-06T13:32:43+00:00",
-  "updated_at": "2026-09-20T16:48:11+00:00",
+  "updated_at": "2026-09-20T19:27:00+00:00",
   "method": "One HTTP GET per target per hour from a GitHub-hosted runner. Self-measured: one prober, one region, no third-party monitoring service. Runs where the prober itself could not reach the network are counted as unknown, not as downtime.",
   "api_summary": {
-    "samples": 84,
-    "checked": 84,
+    "samples": 85,
+    "checked": 85,
     "unreachable_prober": 0,
-    "up": 81,
-    "uptime_percent": 96.43,
+    "up": 82,
+    "uptime_percent": 96.47,
     "median_ms": 52411,
     "last_status": 200
   },
   "web_summary": {
-    "samples": 84,
-    "checked": 84,
+    "samples": 85,
+    "checked": 85,
     "unreachable_prober": 0,
-    "up": 84,
+    "up": 85,
     "uptime_percent": 100.0,
-    "median_ms": 4588,
+    "median_ms": 4574,
     "last_status": 200
   }
 }
